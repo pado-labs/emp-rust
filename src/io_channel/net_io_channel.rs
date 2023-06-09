@@ -38,6 +38,11 @@ impl IOChannel for NetIO {
     fn recv_bytes(&mut self, buffer: &mut [u8]) -> Result<()> {
         self.stream.read_exact(buffer)
     }
+
+    #[inline(always)]
+    fn flush(&mut self) -> Result<()> {
+        self.stream.flush()
+    }
 }
 
 #[cfg(test)]
@@ -53,14 +58,21 @@ mod tests {
         let addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
         let handle: std::thread::JoinHandle<()> = std::thread::spawn(move || {
             let mut io = NetIO::new(true, &addr).unwrap();
-            let buffer = [2_u8; 10];
+            let buffer = [4_u8; 10];
             io.send_bytes(&buffer).unwrap();
+
+            let mut buffer1 = [0_u8; 10];
+            io.recv_bytes(&mut buffer1).unwrap();
+            println!("{:?}", buffer1);
         });
 
         let mut io = NetIO::new(false, &addr).unwrap();
         let mut buffer = [0_u8; 10];
         io.recv_bytes(&mut buffer).unwrap();
         println!("{:?}", buffer);
+
+        let buffer1 = [3_u8; 10];
+        io.send_bytes(&buffer1).unwrap();
         handle.join().unwrap();
     }
 }
