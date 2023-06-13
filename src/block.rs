@@ -110,18 +110,18 @@ impl Block {
         //     Block(_mm_unpacklo_epi64(v2, v3)),
         // )
         unsafe {
-            let x = std::mem::transmute(a);
-            let y = std::mem::transmute(b);
-            let zero = _mm_clmulepi64_si128(x, y, 0x00);
-            let one = _mm_clmulepi64_si128(x, y, 0x10);
-            let two = _mm_clmulepi64_si128(x, y, 0x01);
-            let three = _mm_clmulepi64_si128(x, y, 0x11);
+            let t = self.0;
+            let y = x.0;
+            let zero = _mm_clmulepi64_si128(t, y, 0x00);
+            let one = _mm_clmulepi64_si128(t, y, 0x10);
+            let two = _mm_clmulepi64_si128(t, y, 0x01);
+            let three = _mm_clmulepi64_si128(t, y, 0x11);
             let tmp = _mm_xor_si128(one, two);
             let ll = _mm_slli_si128(tmp, 8);
             let rl = _mm_srli_si128(tmp, 8);
-            let x = _mm_xor_si128(zero, ll);
+            let t = _mm_xor_si128(zero, ll);
             let y = _mm_xor_si128(three, rl);
-            (Block(x),Block(y))
+            (Block(t),Block(y))
             // let x_le: [u8; 16] = std::mem::transmute(x);
             // let y_le: [u8; 16] = std::mem::transmute(y);
             // (u128::from_le_bytes(x_le), u128::from_le_bytes(y_le))
