@@ -13,11 +13,14 @@ use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
+
+#[cfg(target_arch = "aarch64")]
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-#[cfg(target_arch = "aarch64")]
 pub struct Block(pub uint8x16_t);
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[derive(Clone,Copy)]
+#[repr(transparent)]
 pub struct Block(pub __m128i);
 
 impl BitXor for Block {
