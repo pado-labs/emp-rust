@@ -12,14 +12,14 @@ impl NetIO {
         if is_server {
             let listener = TcpListener::bind(addr).expect("Failed to bind!\n");
             let (_stream, _) = listener.accept().unwrap();
-            println!("connected!\n");
+            println!("connected!");
             Ok(Self {
                 _is_server: true,
                 stream: _stream,
             })
         } else {
             let _stream = TcpStream::connect(addr).unwrap();
-            println!("connected!\n");
+            println!("connected!");
             Ok(Self {
                 _is_server: false,
                 stream: _stream,
