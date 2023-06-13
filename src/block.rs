@@ -1,5 +1,8 @@
 use core::mem;
-use std::ops::BitXor;
+use std::{
+    fmt::{Debug, Display},
+    ops::BitXor,
+};
 
 #[cfg(target_arch = "aarch64")]
 use core::arch::aarch64::*;
@@ -10,7 +13,7 @@ use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 #[repr(transparent)]
 #[cfg(target_arch = "aarch64")]
 pub struct Block(pub uint8x16_t);
@@ -78,7 +81,7 @@ impl Block {
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     #[target_feature(enable = "pclmulqdq")]
-    unsafe fn clmul_unsafe(self, x: Self) -> (Block, Block) {
+    unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
         let h = self.0;
         let y = x.0;
 
@@ -100,8 +103,8 @@ impl Block {
         let v3 = _mm_shuffle_epi32(t1, 0x0E);
 
         (
-            ClmulX86(_mm_unpacklo_epi64(v0, v1)),
-            ClmulX86(_mm_unpacklo_epi64(v2, v3)),
+            Block(_mm_unpacklo_epi64(v0, v1)),
+            Block(_mm_unpacklo_epi64(v2, v3)),
         )
     }
 }
@@ -126,8 +129,38 @@ impl From<Block> for [u8; 16] {
     }
 }
 
+impl From<Block> for u128 {
+    #[inline(always)]
+    fn from(m: Block) -> u128 {
+        unsafe {
+            let b: u128 = mem::transmute(m);
+            b
+        }
+    }
+}
+
+impl Debug for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let block: [u8; 16] = (*self).into();
+        for byte in block.iter() {
+            write!(f, "{:02X}", byte)?;
+        }
+        Ok(())
+    }
+}
+
+impl Display for Block {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let block: [u8; 16] = (*self).into();
+        for byte in block.iter() {
+            write!(f, "{:02X}", byte)?;
+        }
+        Ok(())
+    }
+}
+
 #[test]
-fn clmul() {
+fn clmul_test() {
     use rand::{Rng, SeedableRng};
     use rand_chacha::ChaCha12Rng;
 
@@ -139,6 +172,6 @@ fn clmul() {
     let b: Block = Block::new(&b);
     a.clmul(&b);
     let c = a ^ b;
-    println!("{:?}", a);
-    println!("{:?}", c);
+    println!("{}", a);
+    println!("{}", c);
 }
