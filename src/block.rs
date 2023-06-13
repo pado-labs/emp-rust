@@ -10,7 +10,8 @@ use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
 #[cfg(target_arch = "aarch64")]
 pub struct Block(pub uint8x16_t);
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -33,14 +34,29 @@ impl BitXor for Block {
 }
 
 impl Block {
-    pub fn clmul(mut self, x: Self) -> (Block, Block) {
-        unsafe { self.clmul_unsafe(&x) }
+    #[inline]
+    pub fn new(bytes: &[u8; 16]) -> Self {
+        #[cfg(target_arch = "aarch64")]
+        unsafe {
+            Self(vld1q_u8(bytes.as_ptr()))
+        }
+
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        unsafe {
+            // `_mm_loadu_si128` performs an unaligned load
+            #[allow(clippy::cast_ptr_alignment)]
+            Self(_mm_loadu_si128(bytes.as_ptr() as *const __m128i))
+        }
+    }
+
+    pub fn clmul(self, x: &Self) -> (Block, Block) {
+        unsafe { self.clmul_unsafe(x) }
     }
 
     #[inline]
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "neon")]
-    unsafe fn clmul_unsafe(&mut self, x: &Self) -> (Block, Block) {
+    unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
         let h = self.0;
         let y = x.0;
 
@@ -100,8 +116,29 @@ unsafe fn pmull<const A_LANE: i32, const B_LANE: i32>(a: uint8x16_t, b: uint8x16
     ))
 }
 
+impl From<Block> for [u8; 16] {
+    #[inline(always)]
+    fn from(m: Block) -> [u8; 16] {
+        unsafe {
+            let b: [u8; 16] = mem::transmute(m);
+            b
+        }
+    }
+}
+
 #[test]
-fn platform() {
-    #[cfg(target_arch = "x86")]
-    println!("x86");
+fn clmul() {
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaCha12Rng;
+
+    let mut rng = ChaCha12Rng::from_entropy();
+    let a: [u8; 16] = rng.gen();
+    let b: [u8; 16] = rng.gen();
+
+    let a = Block::new(&a);
+    let b: Block = Block::new(&b);
+    a.clmul(&b);
+    let c = a ^ b;
+    println!("{:?}", a);
+    println!("{:?}", c);
 }
