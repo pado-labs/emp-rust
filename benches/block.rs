@@ -22,6 +22,12 @@ fn criterion_benchmark(c: &mut Criterion) {
             black_box(a ^ b);
         });
     });
+
+    c.bench_function("Block::default", move |bench| {
+        bench.iter(|| {
+            black_box(Block::default());
+        });
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

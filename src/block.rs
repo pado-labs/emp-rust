@@ -49,7 +49,7 @@ impl Block {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         unsafe {
             // `_mm_loadu_si128` performs an unaligned load
-            #[allow(clippy::cast_ptr_alignment)]
+            // #[allow(clippy::cast_ptr_alignment)]
             Self(_mm_loadu_si128(bytes.as_ptr() as *const __m128i))
         }
     }
@@ -108,33 +108,31 @@ impl Block {
     }
 }
 
+impl Default for Block {
+    #[inline(always)]
+    fn default() -> Self {
+        Block::from(0u128)
+    }
+}
+
 impl From<Block> for [u8; 16] {
     #[inline(always)]
     fn from(m: Block) -> [u8; 16] {
-        unsafe {
-            let b: [u8; 16] = mem::transmute(m);
-            b
-        }
+        unsafe { mem::transmute(m) }
     }
 }
 
 impl From<Block> for u128 {
     #[inline(always)]
     fn from(m: Block) -> u128 {
-        unsafe {
-            let b: u128 = mem::transmute(m);
-            b
-        }
+        unsafe { mem::transmute(m) }
     }
 }
 
 impl From<u128> for Block {
     #[inline(always)]
     fn from(m: u128) -> Block {
-        unsafe {
-            let b: Block = mem::transmute(m);
-            b
-        }
+        unsafe { mem::transmute(m) }
     }
 }
 
