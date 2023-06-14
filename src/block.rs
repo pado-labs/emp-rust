@@ -1,7 +1,7 @@
 use core::mem;
 use std::{
     fmt::{Debug, Display},
-    ops::BitXor,
+    ops::{BitXor, Mul},
 };
 
 #[cfg(target_arch = "aarch64")]
@@ -22,22 +22,6 @@ pub struct Block(pub uint8x16_t);
 #[repr(transparent)]
 pub struct Block(pub __m128i);
 
-impl BitXor for Block {
-    type Output = Self;
-    #[inline]
-    fn bitxor(self, other: Self) -> Self::Output {
-        #[cfg(target_arch = "aarch64")]
-        unsafe {
-            Self(veorq_u8(self.0, other.0))
-        }
-
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        unsafe {
-            Self(_mm_xor_si128(self.0, other.0))
-        }
-    }
-}
-
 impl Block {
     #[inline]
     pub fn new(bytes: &[u8; 16]) -> Self {
@@ -48,20 +32,18 @@ impl Block {
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
         unsafe {
-            // `_mm_loadu_si128` performs an unaligned load
-            // #[allow(clippy::cast_ptr_alignment)]
             Self(_mm_loadu_si128(bytes.as_ptr() as *const __m128i))
         }
     }
 
-    pub fn clmul(self, x: &Self) -> (Block, Block) {
-        unsafe { self.clmul_unsafe(&x) }
+    pub fn clmul(self, x: &Self) -> (Self, Self) {
+        unsafe { self.clmul_unsafe(x) }
     }
 
     #[inline]
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "neon")]
-    unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
+    unsafe fn clmul_unsafe(self, x: &Self) -> (Self, Self) {
         let h = self.0;
         let y = x.0;
         let z = vdupq_n_u8(0);
@@ -106,6 +88,16 @@ impl Block {
             (Block(tmp3), Block(tmp6))
         }
     }
+
+    pub fn gfmul(self, x: &Self) -> Self {
+        let (a, b) = self.clmul(x);
+        reduce(a, b)
+    }
+}
+
+#[inline(always)]
+fn reduce(_x: Block, _y: Block) -> Block {
+    Block::default()
 }
 
 impl Default for Block {
@@ -153,6 +145,30 @@ impl Display for Block {
             write!(f, "{:02X}", byte)?;
         }
         Ok(())
+    }
+}
+
+impl BitXor for Block {
+    type Output = Self;
+    #[inline]
+    fn bitxor(self, other: Self) -> Self::Output {
+        #[cfg(target_arch = "aarch64")]
+        unsafe {
+            Self(veorq_u8(self.0, other.0))
+        }
+
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        unsafe {
+            Self(_mm_xor_si128(self.0, other.0))
+        }
+    }
+}
+
+impl Mul for Block {
+    type Output = Self;
+    #[inline]
+    fn mul(self, rhs: Self) -> Self::Output {
+        self.gfmul(&rhs)
     }
 }
 
