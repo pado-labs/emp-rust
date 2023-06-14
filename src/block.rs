@@ -54,14 +54,14 @@ impl Block {
         }
     }
 
-    pub fn clmul(self, x: Self) -> (Block, Block) {
-        unsafe { self.clmul_unsafe(x) }
+    pub fn clmul(self, x: &Self) -> (Block, Block) {
+        unsafe { self.clmul_unsafe(&x) }
     }
 
     #[inline]
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "neon")]
-    unsafe fn clmul_unsafe(self, x: Self) -> (Block, Block) {
+    unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
         let h = self.0;
         let y = x.0;
 
@@ -83,7 +83,7 @@ impl Block {
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     #[target_feature(enable = "pclmulqdq")]
-    unsafe fn clmul_unsafe(self, x: Self) -> (Block, Block) {
+    unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
         unsafe {
             let t = self.0;
             let y = x.0;
@@ -199,7 +199,7 @@ fn clmul_test() {
 
     let d: [u8; 16] = a.into();
     let e: u128 = b.into();
-    a.clmul(b);
+    a.clmul(&b);
     let c = a ^ b;
     println!("{}", a);
     println!("{}", b);
@@ -213,7 +213,7 @@ fn clmul_test() {
     let y = Block::from(y);
     println!("{}", x);
     println!("{}", y);
-    let (res1, res2) = x.clmul(y);
+    let (res1, res2) = x.clmul(&y);
     println!("{}", res1);
     println!("{}", res2);
 }
