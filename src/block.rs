@@ -64,20 +64,25 @@ impl Block {
     unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
         let h = self.0;
         let y = x.0;
-
-        // polynomial multiply
         let z = vdupq_n_u8(0);
-        let r0 = pmull::<0, 0>(h, y);
-        let r1 = pmull::<1, 1>(h, y);
-        let t0 = pmull::<0, 1>(h, y);
-        let t1 = pmull::<1, 0>(h, y);
-        let t0 = veorq_u8(t0, t1);
-        let t1 = vextq_u8(z, t0, 8);
-        let r0 = veorq_u8(r0, t1);
-        let t1 = vextq_u8(t0, z, 8);
-        let r1 = veorq_u8(r1, t1);
 
-        (Block(r0), Block(r1))
+        let a_lo = mem::transmute(vget_low_u64(vreinterpretq_u64_u8(h)));
+        let a_hi = mem::transmute(vget_high_u64(vreinterpretq_u64_u8(h)));
+        let b_lo = mem::transmute(vget_low_u64(vreinterpretq_u64_u8(y)));
+        let b_hi = mem::transmute(vget_high_u64(vreinterpretq_u64_u8(y)));
+
+        let tmp3 = mem::transmute(vmull_p64(a_lo, b_lo));
+        let tmp4 = mem::transmute(vmull_p64(a_hi, b_lo));
+        let tmp5 = mem::transmute(vmull_p64(a_lo, b_hi));
+        let tmp6 = mem::transmute(vmull_p64(a_hi, b_hi));
+
+        let tmp4 = veorq_u8(tmp4, tmp5);
+        let tmp5 = vextq_u8(z, tmp4, 8);
+        let tmp3 = veorq_u8(tmp3, tmp5);
+        let tmp4 = vextq_u8(tmp4, z, 8);
+        let tmp6 = veorq_u8(tmp6, tmp4);
+
+        (Block(tmp3), Block(tmp6))
     }
 
     #[inline]
@@ -85,54 +90,22 @@ impl Block {
     #[target_feature(enable = "pclmulqdq")]
     unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
         unsafe {
-            let t = self.0;
+            let h = self.0;
             let y = x.0;
-            let zero = _mm_clmulepi64_si128(t, y, 0x00);
-            let one = _mm_clmulepi64_si128(t, y, 0x10);
-            let two = _mm_clmulepi64_si128(t, y, 0x01);
-            let three = _mm_clmulepi64_si128(t, y, 0x11);
-            let tmp = _mm_xor_si128(one, two);
-            let ll = _mm_slli_si128(tmp, 8);
-            let rl = _mm_srli_si128(tmp, 8);
-            let t = _mm_xor_si128(zero, ll);
-            let y = _mm_xor_si128(three, rl);
-            (Block(t), Block(y))
+
+            let tmp3 = _mm_clmulepi64_si128(h, y, 0x00);
+            let tmp4 = _mm_clmulepi64_si128(h, y, 0x10);
+            let tmp5 = _mm_clmulepi64_si128(h, y, 0x01);
+            let tmp6 = _mm_clmulepi64_si128(h, y, 0x11);
+
+            let tmp4 = _mm_xor_si128(tmp4, tmp5);
+            let tmp5 = _mm_slli_si128(tmp4, 8);
+            let tmp4 = _mm_srli_si128(tmp4, 8);
+            let tmp3 = _mm_xor_si128(tmp3, tmp5);
+            let tmp6 = _mm_xor_si128(tmp6, tmp4);
+            (Block(tmp3), Block(tmp6))
         }
-        // let h = self.0;
-        // let y = x.0;
-
-        // let h0 = h;
-        // let h1 = _mm_shuffle_epi32(h, 0x0E);
-        // let h2 = _mm_xor_si128(h0, h1);
-        // let y0 = y;
-
-        // // Multiply values partitioned to 64-bit parts
-        // let y1 = _mm_shuffle_epi32(y, 0x0E);
-        // let y2 = _mm_xor_si128(y0, y1);
-        // let t0 = _mm_clmulepi64_si128(y0, h0, 0x00);
-        // let t1 = _mm_clmulepi64_si128(y, h, 0x11);
-        // let t2 = _mm_clmulepi64_si128(y2, h2, 0x00);
-        // let t2 = _mm_xor_si128(t2, _mm_xor_si128(t0, t1));
-        // let v0 = t0;
-        // let v1 = _mm_xor_si128(_mm_shuffle_epi32(t0, 0x0E), t2);
-        // let v2 = _mm_xor_si128(t1, _mm_shuffle_epi32(t2, 0x0E));
-        // let v3 = _mm_shuffle_epi32(t1, 0x0E);
-
-        // (
-        //     Block(_mm_unpacklo_epi64(v0, v1)),
-        //     Block(_mm_unpacklo_epi64(v2, v3)),
-        // )
     }
-}
-
-/// Wrapper for the ARM64 `PMULL` instruction.
-#[inline(always)]
-#[cfg(target_arch = "aarch64")]
-unsafe fn pmull<const A_LANE: i32, const B_LANE: i32>(a: uint8x16_t, b: uint8x16_t) -> uint8x16_t {
-    mem::transmute(vmull_p64(
-        vgetq_lane_u64(vreinterpretq_u64_u8(a), A_LANE),
-        vgetq_lane_u64(vreinterpretq_u64_u8(b), B_LANE),
-    ))
 }
 
 impl From<Block> for [u8; 16] {
@@ -187,32 +160,12 @@ impl Display for Block {
 
 #[test]
 fn clmul_test() {
-    use rand::{Rng, SeedableRng};
-    use rand_chacha::ChaCha12Rng;
-
-    let mut rng = ChaCha12Rng::from_entropy();
-    let a: [u8; 16] = rng.gen();
-    let b: [u8; 16] = rng.gen();
-
-    let a = Block::new(&a);
-    let b: Block = Block::new(&b);
-
-    let d: [u8; 16] = a.into();
-    let e: u128 = b.into();
-    a.clmul(&b);
-    let c = a ^ b;
-    println!("{}", a);
-    println!("{}", b);
-    println!("{}", c);
-    println!("{:?}", d);
-    println!("{:X}", e);
-
     let x: u128 = 0x7b5b54657374566563746f725d53475d;
     let y: u128 = 0x48692853686179295b477565726f6e5d;
     let x = Block::from(x);
     let y = Block::from(y);
-    println!("{}", x);
-    println!("{}", y);
+    // let _res1: u128 = 0xd857e24982ab861c929633d5d36f0451;
+    // let _res2: u128 = 0x1d1e1f2c592e7c45d7946a682e55e763;
     let (res1, res2) = x.clmul(&y);
     println!("{}", res1);
     println!("{}", res2);
