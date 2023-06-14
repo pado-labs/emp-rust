@@ -54,14 +54,14 @@ impl Block {
         }
     }
 
-    pub fn clmul(self, x: &Self) -> (Block, Block) {
+    pub fn clmul(self, x: Self) -> (Block, Block) {
         unsafe { self.clmul_unsafe(x) }
     }
 
     #[inline]
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "neon")]
-    unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
+    unsafe fn clmul_unsafe(self, x: Self) -> (Block, Block) {
         let h = self.0;
         let y = x.0;
 
@@ -83,7 +83,7 @@ impl Block {
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     #[target_feature(enable = "pclmulqdq")]
-    unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
+    unsafe fn clmul_unsafe(self, x: Self) -> (Block, Block) {
         unsafe {
             let t = self.0;
             let y = x.0;
@@ -155,10 +155,20 @@ impl From<Block> for u128 {
     }
 }
 
+impl From<u128> for Block {
+    #[inline(always)]
+    fn from(m: u128) -> Block {
+        unsafe {
+            let b: Block = mem::transmute(m);
+            b
+        }
+    }
+}
+
 impl Debug for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let block: [u8; 16] = (*self).into();
-        for byte in block.iter() {
+        for byte in block.iter().rev() {
             write!(f, "{:02X}", byte)?;
         }
         Ok(())
@@ -168,7 +178,7 @@ impl Debug for Block {
 impl Display for Block {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let block: [u8; 16] = (*self).into();
-        for byte in block.iter() {
+        for byte in block.iter().rev() {
             write!(f, "{:02X}", byte)?;
         }
         Ok(())
@@ -186,8 +196,24 @@ fn clmul_test() {
 
     let a = Block::new(&a);
     let b: Block = Block::new(&b);
-    a.clmul(&b);
+
+    let d: [u8; 16] = a.into();
+    let e: u128 = b.into();
+    a.clmul(b);
     let c = a ^ b;
     println!("{}", a);
+    println!("{}", b);
     println!("{}", c);
+    println!("{:?}", d);
+    println!("{:X}", e);
+
+    let x: u128 = 0x7b5b54657374566563746f725d53475d;
+    let y: u128 = 0x48692853686179295b477565726f6e5d;
+    let x = Block::from(x);
+    let y = Block::from(y);
+    println!("{}", x);
+    println!("{}", y);
+    let (res1, res2) = x.clmul(y);
+    println!("{}", res1);
+    println!("{}", res2);
 }
