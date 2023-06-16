@@ -103,10 +103,7 @@ pub fn reduce(x: Block, y: Block) -> Block {
 
 #[inline]
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[target_feature(enable = "pclmulqdq")]
 unsafe fn reduce_unsafe(x: Block, y: Block) -> Block {
-    use std::env::temp_dir;
-
     let tmp3 = x.0;
     let tmp6 = y.0;
     let xmmmask = _mm_setr_epi32(0xffffffff, 0x00, 0x00, 0x00);
