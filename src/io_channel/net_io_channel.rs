@@ -55,7 +55,7 @@ mod tests {
 
     #[test]
     fn io_test() {
-        let addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
+        let addr: SocketAddr = "127.0.0.1:12345".parse().unwrap();
         let handle: std::thread::JoinHandle<()> = std::thread::spawn(move || {
             let mut io = NetIO::new(true, &addr).unwrap();
             let buffer = [4_u8; 10];

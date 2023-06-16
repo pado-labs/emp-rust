@@ -90,23 +90,6 @@ impl Block {
         }
     }
 
-    #[inline]
-    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    #[target_feature(enable = "pclmulqdq")]
-    unsafe fn is_equal_unsafe(self, x: &Self) -> bool {
-        let tmp = _mm_xor_si128(self.0, x.0);
-        _mm_testz_si128(tmp, tmp) == 1
-    }
-
-    #[inline]
-    #[cfg(target_arch = "aarch64")]
-    #[target_feature(enable = "neon")]
-    unsafe fn is_equal_unsafe(self, x: &Self) -> bool {
-        let tmp = veorq_u8(self.0, x.0);
-        let tmp1 = vreinterpretq_u64_u8(tmp);
-        (vgetq_lane_u64(tmp1, 0) == 0) & (vgetq_lane_u64(tmp1, 1) == 0)
-    }
-
     pub fn gfmul(self, x: &Self) -> Self {
         let (a, b) = self.clmul(x);
         reduce(a, b)
@@ -114,8 +97,86 @@ impl Block {
 }
 
 #[inline(always)]
-fn reduce(_x: Block, _y: Block) -> Block {
-    Block::default()
+pub fn reduce(x: Block, y: Block) -> Block {
+    unsafe { reduce_unsafe(x, y) }
+}
+
+#[inline]
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+#[target_feature(enable = "pclmulqdq")]
+unsafe fn reduce_unsafe(x: Block, y: Block) -> Block {
+    use std::env::temp_dir;
+
+    let tmp3 = x.0;
+    let tmp6 = y.0;
+    let xmmmask = _mm_setr_epi32(0xffffffff, 0x00, 0x00, 0x00);
+    let tmp7 = _mm_srli_epi32(tmp6, 31);
+    let tmp8 = _mm_srli_epi32(tmp6, 30);
+    let tmp9 = _mm_srli_epi32(tmp6, 25);
+
+    let tmp7 = _mm_xor_si128(tmp7, tmp8);
+    let tmp7 = _mm_xor_si128(tmp7, tmp9);
+
+    let tmp8 = _mm_shuffle_epi32(tmp7, 147);
+
+    let tmp7 = _mm_and_si128(xmmmask, tmp8);
+    let tmp8 = _mm_andnot_si128(xmmmask, tmp8);
+    let tmp3 = _mm_xor_si128(tmp3, tmp8);
+    let tmp6 = _mm_xor_si128(tmp6, tmp7);
+
+    let tmp10 = _mm_slli_epi32(tmp6, 1);
+    let tmp3 = _mm_xor_si128(tmp3, tmp10);
+    let tmp11 = _mm_slli_epi32(tmp6, 2);
+    let tmp3 = _mm_xor_si128(tmp3, tmp11);
+    let tmp12 = _mm_slli_epi32(tmp6, 7);
+    let tmp3 = _mm_xor_si128(tmp3, tmp12);
+
+    Block(_mm_xor_si128(tmp3, tmp6))
+}
+
+#[inline]
+#[cfg(target_arch = "aarch64")]
+#[target_feature(enable = "neon")]
+unsafe fn reduce_unsafe(x: Block, y: Block) -> Block {
+    let tmp3 = x.0;
+    let tmp6 = y.0;
+    let xmmmask = vreinterpretq_u8_u32(vld1q_u32([0xffffffff, 0x0, 0x0, 0x0].as_ptr()));
+    let tmp7 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(-31)));
+    let tmp8 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(-30)));
+    let tmp9 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(-25)));
+
+    let tmp7 = veorq_u8(tmp7, tmp8);
+    let tmp7 = veorq_u8(tmp7, tmp9);
+
+    let tmp8 = vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), 147 & (0x3)));
+    let tmp8 = vsetq_lane_u32(
+        vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), (147 >> 2) & (0x3)),
+        tmp8,
+        1,
+    );
+    let tmp8 = vsetq_lane_u32(
+        vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), (147 >> 4) & (0x3)),
+        tmp8,
+        2,
+    );
+    let tmp8 = vreinterpretq_u8_u32(vsetq_lane_u32(
+        vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), (147 >> 6) & (0x3)),
+        tmp8,
+        3,
+    ));
+
+    let tmp7 = vandq_u8(xmmmask, tmp8);
+    let tmp8 = vbicq_u8(tmp8, xmmmask);
+    let tmp3 = veorq_u8(tmp3, tmp8);
+    let tmp6 = veorq_u8(tmp6, tmp7);
+
+    let tmp10 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(1)));
+    let tmp3 = veorq_u8(tmp3, tmp10);
+    let tmp11 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(2)));
+    let tmp3 = veorq_u8(tmp3, tmp11);
+    let tmp12 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(7)));
+    let tmp3 = veorq_u8(tmp3, tmp12);
+    Block(veorq_u8(tmp3, tmp6))
 }
 
 impl Default for Block {
@@ -149,7 +210,9 @@ impl From<u128> for Block {
 impl PartialEq for Block {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
-        unsafe { self.is_equal_unsafe(other) }
+        let x: u128 = unsafe { mem::transmute(*self) };
+        let y: u128 = unsafe { mem::transmute(*other) };
+        x == y
     }
 }
 
@@ -203,10 +266,17 @@ fn clmul_test() {
     let y: u128 = 0x48692853686179295b477565726f6e5d;
     let x = Block::from(x);
     let y = Block::from(y);
-    let _res1 = Block::from(0xd857e24982ab861c929633d5d36f0451);
-    let _res2 = Block::from(0x1d1e1f2c592e7c45d7946a682e55e763);
-    let (res1, res2) = x.clmul(&y);
-    assert_eq!((_res1, _res2), (res1, res2));
-    println!("{}", res1);
-    println!("{}", res2);
+    let res1 = Block::from(0xd857e24982ab861c929633d5d36f0451);
+    let res2 = Block::from(0x1d1e1f2c592e7c45d7946a682e55e763);
+    assert_eq!(x.clmul(&y), (res1, res2));
+}
+
+#[test]
+fn reduce_test() {
+    let x: u128 = 0xd857e24982ab861c929633d5d36f0451;
+    let y: u128 = 0x1d1e1f2c592e7c45d7946a682e55e763;
+    let x = Block::from(x);
+    let y = Block::from(y);
+    let z = Block::from(0x040229a09a5ed12e7e4e10da323506d2);
+    assert_eq!(z,reduce(x,y));
 }
