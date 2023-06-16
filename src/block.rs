@@ -90,6 +90,23 @@ impl Block {
         }
     }
 
+    #[inline]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[target_feature(enable = "pclmulqdq")]
+    unsafe fn is_equal_unsafe(self, x: &Self) -> bool {
+        let tmp = _mm_xor_si128(self.0, x.0);
+        _mm_testz_si128(tmp, tmp) == 1
+    }
+
+    #[inline]
+    #[cfg(target_arch = "aarch64")]
+    #[target_feature(enable = "neon")]
+    unsafe fn is_equal_unsafe(self, x: &Self) -> bool {
+        let tmp = veorq_u8(self.0, x.0);
+        let tmp1 = vreinterpretq_u64_u8(tmp);
+        (vgetq_lane_u64(tmp1, 0) == 0) & (vgetq_lane_u64(tmp1, 1) == 0)
+    }
+
     pub fn gfmul(self, x: &Self) -> Self {
         let (a, b) = self.clmul(x);
         reduce(a, b)
@@ -126,6 +143,13 @@ impl From<u128> for Block {
     #[inline(always)]
     fn from(m: u128) -> Block {
         unsafe { mem::transmute(m) }
+    }
+}
+
+impl PartialEq for Block {
+    #[inline(always)]
+    fn eq(&self, other: &Self) -> bool {
+        unsafe { self.is_equal_unsafe(other) }
     }
 }
 
@@ -179,9 +203,10 @@ fn clmul_test() {
     let y: u128 = 0x48692853686179295b477565726f6e5d;
     let x = Block::from(x);
     let y = Block::from(y);
-    // let _res1: u128 = 0xd857e24982ab861c929633d5d36f0451;
-    // let _res2: u128 = 0x1d1e1f2c592e7c45d7946a682e55e763;
+    let _res1 = Block::from(0xd857e24982ab861c929633d5d36f0451);
+    let _res2 = Block::from(0x1d1e1f2c592e7c45d7946a682e55e763);
     let (res1, res2) = x.clmul(&y);
+    assert_eq!((_res1, _res2), (res1, res2));
     println!("{}", res1);
     println!("{}", res2);
 }

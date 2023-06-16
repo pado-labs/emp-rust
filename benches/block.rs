@@ -32,9 +32,9 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("Block::u128_xor", move |bench| {
+    c.bench_function("Block::equal", move |bench| {
         bench.iter(|| {
-            black_box(x ^ y);
+            black_box(x == y);
         });
     });
 }
