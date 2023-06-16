@@ -35,9 +35,21 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("reduce:", move |bench| {
+    c.bench_function("Block::gfmul", move |bench| {
+        bench.iter(|| {
+            black_box(a.gfmul(&b));
+        });
+    });
+
+    c.bench_function("reduce", move |bench| {
         bench.iter(|| {
             black_box(reduce(a, b));
+        });
+    });
+
+    c.bench_function("mul", move |bench| {
+        bench.iter(|| {
+            black_box(a * b);
         });
     });
 }

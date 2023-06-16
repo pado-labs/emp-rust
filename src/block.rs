@@ -90,6 +90,7 @@ impl Block {
         }
     }
 
+    #[inline(always)]
     pub fn gfmul(self, x: &Self) -> Self {
         let (a, b) = self.clmul(x);
         reduce(a, b)
@@ -275,5 +276,14 @@ fn reduce_test() {
     let x = Block::from(x);
     let y = Block::from(y);
     let z = Block::from(0x040229a09a5ed12e7e4e10da323506d2);
-    assert_eq!(z,reduce(x,y));
+    assert_eq!(z, reduce(x, y));
+}
+
+#[test]
+fn gfmul_test() {
+    let x = Block::from(0x7b5b54657374566563746f725d53475d);
+    let y = Block::from(0x48692853686179295b477565726f6e5d);
+
+    println!("{}", x.gfmul(&y));
+    println!("{}", x * y);
 }
