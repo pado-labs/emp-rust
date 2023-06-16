@@ -36,6 +36,7 @@ impl Block {
         }
     }
 
+    #[inline(always)]
     pub fn clmul(self, x: &Self) -> (Self, Self) {
         unsafe { self.clmul_unsafe(x) }
     }
