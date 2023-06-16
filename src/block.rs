@@ -1,8 +1,10 @@
 use core::mem;
 use std::{
     fmt::{Debug, Display},
-    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, MulAssign},
+    ops::{Add, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, MulAssign},
 };
+
+use rayon::prelude::*;
 
 #[cfg(target_arch = "aarch64")]
 use core::arch::aarch64::*;
@@ -186,6 +188,34 @@ impl Block {
     pub fn set_lsb(&mut self) {
         *self = (*self) | Block::from(1u128);
     }
+
+    #[inline(always)]
+    pub fn inn_prdt_no_red(a: &Vec<Block>, b: &Vec<Block>) -> (Block, Block) {
+        assert_eq!(a.len(), b.len());
+        // a.par_iter()
+        //     .zip(b.par_iter())
+        //     .map(|(x, y)| x.clmul(y))
+        //     .reduce(
+        //         || (Block::default(), Block::default()),
+        //         |acc, (x, y)| (acc.0 ^ x, acc.1 ^ y),
+        //     )
+        a.iter()
+            .zip(b.iter())
+            .fold((Block::default(), Block::default()), |acc, (x, y)| {
+                let t = x.clmul(y);
+                (t.0 ^ acc.0, t.1 ^ acc.1)
+                // t.0 = t.0 ^ (acc.0);
+                // t.1 = t.1 ^ (acc.1);
+                // t
+            })
+        // (Block::default(), Block::default())
+    }
+
+    #[inline(always)]
+    pub fn inn_prdt_red(a: &Vec<Block>, b: &Vec<Block>) -> Block {
+        let (x, y) = Block::inn_prdt_no_red(a, b);
+        Block::reduce(x, y)
+    }
 }
 
 impl Default for Block {
@@ -268,6 +298,13 @@ impl BitXorAssign for Block {
     }
 }
 
+impl Add for Block {
+    type Output = Self;
+    #[inline(always)]
+    fn add(self, rhs: Self) -> Self::Output {
+        self ^ rhs
+    }
+}
 impl BitOr for Block {
     type Output = Self;
     #[inline(always)]
@@ -403,6 +440,29 @@ fn lsb_test() {
     assert_eq!((x & 1) == 1, y.get_lsb());
 
     y.set_lsb();
-    assert_eq!(y.get_lsb(),true);
+    assert_eq!(y.get_lsb(), true);
+}
 
+#[test]
+fn inn_prdt_test() {
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaCha12Rng;
+    let mut rng = ChaCha12Rng::from_entropy();
+
+    const SIZE: usize = 1000;
+    let mut a = Vec::new();
+    let mut b = Vec::new();
+    let mut c = (Block::default(), Block::default());
+    for i in 0..SIZE {
+        let r: u128 = rng.gen();
+        a.push(Block::from(r));
+        let r: u128 = rng.gen();
+        b.push(Block::from(r));
+
+        let z = a[i].clmul(&b[i]);
+        c.0 = c.0 ^ z.0;
+        c.1 = c.1 ^ z.1;
+    }
+
+    assert_eq!(c, Block::inn_prdt_no_red(&a, &b));
 }

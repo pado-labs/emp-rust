@@ -10,6 +10,15 @@ fn criterion_benchmark(c: &mut Criterion) {
     let b: [u8; 16] = rng.gen();
     let a = Block::new(&a);
     let b = Block::new(&b);
+    const SIZE: usize = 1000;
+    let mut x = Vec::new();
+    let mut y = Vec::new();
+    for _ in 0..SIZE {
+        x.push(Block::from(rng.gen::<u128>()));
+        y.push(Block::from(rng.gen::<u128>()));
+    }
+    let t = x.clone();
+    let f = y.clone();
 
     c.bench_function("Block::clmul", move |bench| {
         bench.iter(|| {
@@ -68,6 +77,18 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("Block::get_lsb", move |bench| {
         bench.iter(|| {
             black_box(a.get_lsb());
+        });
+    });
+
+    c.bench_function("Block::inn_prod_no_red", move |bench| {
+        bench.iter(|| {
+            black_box(Block::inn_prdt_no_red(&x, &y));
+        });
+    });
+
+    c.bench_function("Block::inn_prod_red", move |bench| {
+        bench.iter(|| {
+            black_box(Block::inn_prdt_red(&t, &f));
         });
     });
 }

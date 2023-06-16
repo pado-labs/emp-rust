@@ -55,8 +55,8 @@ mod tests {
 
     #[test]
     fn io_test() {
-        let addr: SocketAddr = "127.0.0.1:12345".parse().unwrap();
         let handle: std::thread::JoinHandle<()> = std::thread::spawn(move || {
+            let addr: SocketAddr = "0.0.0.0:10086".parse().unwrap();
             let mut io = NetIO::new(true, &addr).unwrap();
             let buffer = [4_u8; 10];
             io.send_bytes(&buffer).unwrap();
@@ -66,13 +66,39 @@ mod tests {
             println!("{:?}", buffer1);
         });
 
-        let mut io = NetIO::new(false, &addr).unwrap();
-        let mut buffer = [0_u8; 10];
-        io.recv_bytes(&mut buffer).unwrap();
-        println!("{:?}", buffer);
+        let handle2: std::thread::JoinHandle<()> = std::thread::spawn(move || {
+            let addr: SocketAddr = "127.0.0.1:10086".parse().unwrap();
+            let mut io = NetIO::new(false, &addr).unwrap();
+            let mut buffer = [0_u8; 10];
+            io.recv_bytes(&mut buffer).unwrap();
+            println!("{:?}", buffer);
+            
+            let buffer1 = [3_u8; 10];
+            io.send_bytes(&buffer1).unwrap();
+        });
 
-        let buffer1 = [3_u8; 10];
-        io.send_bytes(&buffer1).unwrap();
         handle.join().unwrap();
+        handle2.join().unwrap();
     }
+    // fn io_test() {
+    //     let addr: SocketAddr = "127.0.0.1:12345".parse().unwrap();
+    //     let handle: std::thread::JoinHandle<()> = std::thread::spawn(move || {
+    //         let mut io = NetIO::new(true, &addr).unwrap();
+    //         let buffer = [4_u8; 10];
+    //         io.send_bytes(&buffer).unwrap();
+
+    //         let mut buffer1 = [0_u8; 10];
+    //         io.recv_bytes(&mut buffer1).unwrap();
+    //         println!("{:?}", buffer1);
+    //     });
+
+    //     let mut io = NetIO::new(false, &addr).unwrap();
+    //     let mut buffer = [0_u8; 10];
+    //     io.recv_bytes(&mut buffer).unwrap();
+    //     println!("{:?}", buffer);
+
+    //     let buffer1 = [3_u8; 10];
+    //     io.send_bytes(&buffer1).unwrap();
+    //     handle.join().unwrap();
+    // }
 }
