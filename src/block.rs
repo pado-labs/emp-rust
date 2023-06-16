@@ -178,21 +178,10 @@ impl Block {
 
     #[inline(always)]
     pub fn get_lsb(&self) -> bool {
-        #[cfg(target_arch = "aarch64")]
-        unsafe {
-            (vgetq_lane_u8(self.0, 0) & 1) == 1
-        }
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        unsafe {
-            (_mm_extract_epi8(self.0, 0) & 1) == 1
-        }
-    }
-
-    #[inline(always)]
-    pub fn get_lsb_new(&self) -> bool {
         let x = u128::from(*self);
         (x & 1) == 1
     }
+
     #[inline(always)]
     pub fn set_lsb(&mut self) {}
 }
@@ -344,11 +333,4 @@ fn lsb_test() {
     let x: u128 = rng.gen();
     let y = Block::from(x);
     assert_eq!((x & 1) == 1, y.get_lsb());
-    assert_eq!((x & 1) == 1, y.get_lsb_new());
-    let x = Block::from(0x7b5b54657374566563746f725d53475d);
-    let y = Block::from(0x48692853686179295b477565726f6e5d);
-    let z = Block::from(0x33327c361b152f4c38331a172f3c2900);
-    println!("{}", x.get_lsb());
-    println!("{}", y.get_lsb());
-    println!("{}", z.get_lsb());
 }

@@ -58,12 +58,6 @@ fn criterion_benchmark(c: &mut Criterion) {
             black_box(a.get_lsb());
         });
     });
-
-    c.bench_function("Block::get_lsb_new", move |bench| {
-        bench.iter(|| {
-            black_box(a.get_lsb_new());
-        });
-    });
 }
 
 criterion_group!(benches, criterion_benchmark);
