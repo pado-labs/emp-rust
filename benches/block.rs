@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use emp_rust::block::{reduce, Block};
+use emp_rust::block::Block;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha12Rng;
 
@@ -41,15 +41,27 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("reduce", move |bench| {
+    c.bench_function("Block::reduce", move |bench| {
         bench.iter(|| {
-            black_box(reduce(a, b));
+            black_box(Block::reduce(a, b));
         });
     });
 
-    c.bench_function("mul", move |bench| {
+    c.bench_function("Block::mul", move |bench| {
         bench.iter(|| {
             black_box(a * b);
+        });
+    });
+
+    c.bench_function("Block::get_lsb", move |bench| {
+        bench.iter(|| {
+            black_box(a.get_lsb());
+        });
+    });
+
+    c.bench_function("Block::get_lsb_new", move |bench| {
+        bench.iter(|| {
+            black_box(a.get_lsb_new());
         });
     });
 }
