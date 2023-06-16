@@ -23,7 +23,7 @@ pub struct Block(pub uint8x16_t);
 pub struct Block(pub __m128i);
 
 impl Block {
-    #[inline]
+    #[inline(always)]
     pub fn new(bytes: &[u8; 16]) -> Self {
         #[cfg(target_arch = "aarch64")]
         unsafe {
@@ -91,8 +91,8 @@ impl Block {
     }
 
     #[inline(always)]
-    pub fn gfmul(self, x: &Self) -> Self {
-        let (a, b) = self.clmul(x);
+    pub fn gfmul(self, x: Self) -> Self {
+        let (a, b) = self.clmul(&x);
         reduce(a, b)
     }
 }
@@ -236,7 +236,7 @@ impl Display for Block {
 
 impl BitXor for Block {
     type Output = Self;
-    #[inline]
+    #[inline(always)]
     fn bitxor(self, other: Self) -> Self::Output {
         #[cfg(target_arch = "aarch64")]
         unsafe {
@@ -252,9 +252,9 @@ impl BitXor for Block {
 
 impl Mul for Block {
     type Output = Self;
-    #[inline]
+    #[inline(always)]
     fn mul(self, rhs: Self) -> Self::Output {
-        self.gfmul(&rhs)
+        self.gfmul(rhs)
     }
 }
 
@@ -283,7 +283,8 @@ fn reduce_test() {
 fn gfmul_test() {
     let x = Block::from(0x7b5b54657374566563746f725d53475d);
     let y = Block::from(0x48692853686179295b477565726f6e5d);
+    let z = Block::from(0x040229a09a5ed12e7e4e10da323506d2);
 
-    println!("{}", x.gfmul(&y));
-    println!("{}", x * y);
+    assert_eq!(z, x.gfmul(y));
+    assert_eq!(z, x * y);
 }
