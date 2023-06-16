@@ -1,10 +1,8 @@
 use core::mem;
 use std::{
     fmt::{Debug, Display},
-    ops::{Add, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, MulAssign},
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, MulAssign},
 };
-
-use rayon::prelude::*;
 
 #[cfg(target_arch = "aarch64")]
 use core::arch::aarch64::*;
@@ -192,23 +190,12 @@ impl Block {
     #[inline(always)]
     pub fn inn_prdt_no_red(a: &Vec<Block>, b: &Vec<Block>) -> (Block, Block) {
         assert_eq!(a.len(), b.len());
-        // a.par_iter()
-        //     .zip(b.par_iter())
-        //     .map(|(x, y)| x.clmul(y))
-        //     .reduce(
-        //         || (Block::default(), Block::default()),
-        //         |acc, (x, y)| (acc.0 ^ x, acc.1 ^ y),
-        //     )
         a.iter()
             .zip(b.iter())
             .fold((Block::default(), Block::default()), |acc, (x, y)| {
                 let t = x.clmul(y);
                 (t.0 ^ acc.0, t.1 ^ acc.1)
-                // t.0 = t.0 ^ (acc.0);
-                // t.1 = t.1 ^ (acc.1);
-                // t
             })
-        // (Block::default(), Block::default())
     }
 
     #[inline(always)]
@@ -298,13 +285,6 @@ impl BitXorAssign for Block {
     }
 }
 
-impl Add for Block {
-    type Output = Self;
-    #[inline(always)]
-    fn add(self, rhs: Self) -> Self::Output {
-        self ^ rhs
-    }
-}
 impl BitOr for Block {
     type Output = Self;
     #[inline(always)]
