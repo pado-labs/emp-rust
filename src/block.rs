@@ -1,7 +1,7 @@
 use core::mem;
 use std::{
     fmt::{Debug, Display},
-    ops::{BitXor, BitXorAssign, Mul, MulAssign},
+    ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Mul, MulAssign},
 };
 
 #[cfg(target_arch = "aarch64")]
@@ -183,7 +183,9 @@ impl Block {
     }
 
     #[inline(always)]
-    pub fn set_lsb(&mut self) {}
+    pub fn set_lsb(&mut self) {
+        *self = (*self) | Block::from(1u128);
+    }
 }
 
 impl Default for Block {
@@ -266,6 +268,52 @@ impl BitXorAssign for Block {
     }
 }
 
+impl BitOr for Block {
+    type Output = Self;
+    #[inline(always)]
+    fn bitor(self, rhs: Self) -> Self::Output {
+        #[cfg(target_arch = "aarch64")]
+        unsafe {
+            Self(vorrq_u8(self.0, rhs.0))
+        }
+
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        unsafe {
+            Self(_mm_or_si128(self.0, rhs.0))
+        }
+    }
+}
+
+impl BitOrAssign for Block {
+    #[inline(always)]
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self | rhs
+    }
+}
+
+impl BitAnd for Block {
+    type Output = Self;
+    #[inline(always)]
+    fn bitand(self, rhs: Self) -> Self::Output {
+        #[cfg(target_arch = "aarch64")]
+        unsafe {
+            Self(vandq_u8(self.0, rhs.0))
+        }
+
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        unsafe {
+            Self(_mm_and_si128(self.0, rhs.0))
+        }
+    }
+}
+
+impl BitAndAssign for Block {
+    #[inline(always)]
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = *self & rhs
+    }
+}
+
 impl Mul for Block {
     type Output = Self;
     #[inline(always)]
@@ -314,14 +362,34 @@ fn gfmul_test() {
 }
 
 #[test]
-fn xor_test() {
-    let mut x = Block::from(0x7b5b54657374566563746f725d53475d);
-    let y = Block::from(0x48692853686179295b477565726f6e5d);
-    let z = Block::from(0x33327c361b152f4c38331a172f3c2900);
+fn bit_test() {
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaCha12Rng;
+    let mut rng = ChaCha12Rng::from_entropy();
+    let x: u128 = rng.gen();
+    let y: u128 = rng.gen();
 
-    assert_eq!(z, x ^ y);
-    x ^= y;
-    assert_eq!(z, x);
+    let x: Block = Block::from(x);
+    let y: Block = Block::from(y);
+
+    let _x: u128 = x.into();
+    let _y: u128 = y.into();
+
+    assert_eq!(Block::from(_x ^ _y), x ^ y);
+    assert_eq!(Block::from(_x | _y), x | y);
+    assert_eq!(Block::from(_x & _y), x & y);
+
+    let mut z = x;
+    z ^= y;
+    assert_eq!(Block::from(_x ^ _y), z);
+
+    z = x;
+    z |= y;
+    assert_eq!(Block::from(_x | _y), z);
+
+    z = x;
+    z &= y;
+    assert_eq!(Block::from(_x & _y), z);
 }
 
 #[test]
@@ -331,6 +399,10 @@ fn lsb_test() {
     let mut rng = ChaCha12Rng::from_entropy();
 
     let x: u128 = rng.gen();
-    let y = Block::from(x);
+    let mut y = Block::from(x);
     assert_eq!((x & 1) == 1, y.get_lsb());
+
+    y.set_lsb();
+    assert_eq!(y.get_lsb(),true);
+
 }
