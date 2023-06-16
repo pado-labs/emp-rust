@@ -106,7 +106,7 @@ pub fn reduce(x: Block, y: Block) -> Block {
 unsafe fn reduce_unsafe(x: Block, y: Block) -> Block {
     let tmp3 = x.0;
     let tmp6 = y.0;
-    let xmmmask = _mm_setr_epi32(0xffffffff, 0x00, 0x00, 0x00);
+    let xmmmask = _mm_setr_epi32(-1, 0x0, 0x0, 0x0);
     let tmp7 = _mm_srli_epi32(tmp6, 31);
     let tmp8 = _mm_srli_epi32(tmp6, 30);
     let tmp9 = _mm_srli_epi32(tmp6, 25);
