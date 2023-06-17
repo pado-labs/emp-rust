@@ -188,6 +188,16 @@ impl Block {
     }
 
     #[inline(always)]
+    pub fn try_from_slice(bytes_slice: &[u8]) -> Option<Self> {
+        if bytes_slice.len() != 16 {
+            return None;
+        }
+        let mut bytes: [u8; 16] = [0; 16];
+        bytes[..16].clone_from_slice(&bytes_slice[..16]);
+        Some(Block::new(&bytes))
+    }
+
+    #[inline(always)]
     pub fn inn_prdt_no_red(a: &Vec<Block>, b: &Vec<Block>) -> (Block, Block) {
         assert_eq!(a.len(), b.len());
         a.iter()
@@ -259,6 +269,20 @@ impl Display for Block {
             write!(f, "{:02X}", byte)?;
         }
         Ok(())
+    }
+}
+
+impl AsRef<[u8]> for Block {
+    #[inline(always)]
+    fn as_ref(&self) -> &[u8] {
+        unsafe { &*(self as *const Block as *const [u8; 16]) }
+    }
+}
+
+impl AsMut<[u8]> for Block {
+    #[inline(always)]
+    fn as_mut(&mut self) -> &mut [u8] {
+        unsafe { &mut *(self as *mut Block as *mut [u8; 16]) }
     }
 }
 
@@ -433,6 +457,7 @@ fn inn_prdt_test() {
     let mut a = Vec::new();
     let mut b = Vec::new();
     let mut c = (Block::default(), Block::default());
+    let mut d = Block::default();
     for i in 0..SIZE {
         let r: u128 = rng.gen();
         a.push(Block::from(r));
@@ -442,7 +467,25 @@ fn inn_prdt_test() {
         let z = a[i].clmul(&b[i]);
         c.0 = c.0 ^ z.0;
         c.1 = c.1 ^ z.1;
+
+        let x = a[i] * b[i];
+        d ^= x;
     }
 
     assert_eq!(c, Block::inn_prdt_no_red(&a, &b));
+    assert_eq!(d, Block::inn_prdt_red(&a, &b));
+}
+
+#[test]
+fn to_bytes_test() {
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaCha12Rng;
+    let mut rng = ChaCha12Rng::from_entropy();
+
+    let x: Block = rng.gen::<u128>().into();
+    assert_eq!(x, Block::try_from_slice(x.as_ref()).unwrap());
+
+    let mut y: Block = rng.gen::<u128>().into();
+    let _y = Block::try_from_slice(y.as_mut()).unwrap();
+    assert_eq!(y, _y);
 }
