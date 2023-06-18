@@ -77,29 +77,41 @@ impl Drop for NetIO {
 
 #[test]
 fn io_test() {
+    use crate::block::Block;
+
     let addr = "127.0.0.1:12345";
+    const NUM: usize = 10;
+    let send_bytes = rand::random::<[u8; NUM]>();
+    let send_bool = rand::random::<bool>();
+    let send_bool_vec = rand::random::<[bool; NUM]>();
+    let send_block = rand::random::<Block>();
+    let send_block_vec = rand::random::<[Block; NUM]>();
+
     let handle: std::thread::JoinHandle<()> = std::thread::spawn(move || {
         let mut io = NetIO::new(true, addr).unwrap();
-        let buffer = [4_u8; 10];
-        io.send_bytes(&buffer).unwrap();
 
-        let mut buffer1 = [0_u8; 10];
-        io.recv_bytes(&mut buffer1).unwrap();
-        println!("Server: {:?}", buffer1);
-        println!("Server: counter: {}", io.counter);
-        println!("Server: rounds: {}", io.rounds);
+        io.send_bytes(&send_bytes).unwrap();
+        io.send_bool(&send_bool).unwrap();
+        io.send_bool_vec(&send_bool_vec.to_vec()).unwrap();
+        io.send_block(&send_block).unwrap();
+        io.send_block_vec(&send_block_vec.to_vec()).unwrap();
     });
 
     {
         let mut io = NetIO::new(false, addr).unwrap();
-        let mut buffer = [0_u8; 10];
-        io.recv_bytes(&mut buffer).unwrap();
-        println!("Client: {:?}", buffer);
 
-        let buffer1 = [3_u8; 10];
-        io.send_bytes(&buffer1).unwrap();
-        println!("Client: counter: {}", io.counter);
-        println!("Client: rounds: {}", io.rounds);
+        let mut recv_bytes = vec![0u8; NUM];
+        io.recv_bytes(&mut recv_bytes).unwrap();
+        let recv_bool = io.recv_bool().unwrap();
+        let recv_bool_vec = io.recv_bool_vec(NUM).unwrap();
+        let recv_block = io.recv_block().unwrap();
+        let recv_block_vec = io.recv_block_vec(NUM).unwrap();
+
+        assert_eq!(send_bytes.to_vec(), recv_bytes);
+        assert_eq!(send_bool, recv_bool);
+        assert_eq!(send_bool_vec.to_vec(), recv_bool_vec);
+        assert_eq!(send_block, recv_block);
+        assert_eq!(send_block_vec.to_vec(), recv_block_vec);
     }
     handle.join().unwrap();
 }

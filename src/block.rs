@@ -370,6 +370,13 @@ impl MulAssign for Block {
     }
 }
 
+impl rand::distributions::Distribution<Block> for rand::distributions::Standard {
+    #[inline]
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Block {
+        Block::from(rng.gen::<u128>())
+    }
+}
+
 #[test]
 fn clmul_test() {
     let x: u128 = 0x7b5b54657374566563746f725d53475d;
