@@ -3,17 +3,34 @@ use crate::io_channel::IOChannel;
 use std::io::{BufReader, BufWriter, Read, Result, Write};
 use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 
+/// A TCP network stream with buffer `NETWORK_BUFFER_SIZE`.\
+/// This NetIO struct implements the IOChannel trait.
 pub struct NetIO {
+    /// Indicate it is a server or a client.
     _is_server: bool,
+    
+    /// A buffered reader that is used to receive messages.
     reader: BufReader<TcpStream>,
+
+    /// A buffered writer that is used to send messages.
     writer: BufWriter<TcpStream>,
+
+    /// A counter that records the size of communication in Bytes.
     comm_cnt: usize,
+
+    /// A counter that records the number of round trips.
     round_cnt: usize,
+
+    /// A counter that records the number of flush operations.
     flush_cnt: usize,
+
+    /// Indicate that the message is sent or not.
     has_sent: bool,
 }
 
 impl NetIO {
+    /// New a NetIO with socket address `addr`.\
+    /// Determine the server with `is_server`.
     pub fn new<A: ToSocketAddrs>(is_server: bool, addr: A) -> Result<Self> {
         let stream = if is_server {
             let listener = TcpListener::bind(addr).expect("Failed to bind!");
@@ -73,6 +90,7 @@ impl IOChannel for NetIO {
 }
 
 impl Drop for NetIO {
+    /// Flush the channel when dropping the object.
     fn drop(&mut self) {
         self.flush().unwrap();
     }

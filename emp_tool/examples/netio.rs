@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use emp_rust::{
+use emp_tool::{
     block::Block,
     constants::{ALICE, BOB},
     io_channel::{CommandLineOpt, IOChannel, NetIO},

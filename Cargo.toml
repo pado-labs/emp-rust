@@ -1,26 +1,9 @@
-[package]
-name = "emp-rust"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-rand = {version = "0.8"}
-structopt = {version = "0.3.20"}
-
-[dev-dependencies]
-rand = {version = "0.8"}
-rand_chacha = {version = "0.3"}
-criterion = {version = "0.5.1"}
+[workspace]
+members = [
+    "emp_tool"
+]
 
 [profile.release]
 opt-level = 3
-
-[[bench]]
-name = "block"
-harness = false
-
-[[example]]
-name = "netio"
-path = "examples/netio.rs"
+debug = true
+lto = true

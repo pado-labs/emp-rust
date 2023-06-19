@@ -1,3 +1,5 @@
+//! Define a 128-bit chunk type and related operations.
+
 use core::mem;
 use std::{
     fmt::{Debug, Display},
@@ -13,10 +15,21 @@ use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
+use crate::ZERO_BLOCK;
+
+/// A 128-bit chunk type.\
+/// It is also viewed as an element in `GF(2^128)` with polynomial `x^128 + x^7 + x^2 + x + 1`\
+/// Use intrinsics whenever available to speedup.\
+/// Now support aarch64 and x86/x86_64
 #[cfg(target_arch = "aarch64")]
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct Block(pub uint8x16_t);
+
+/// A 128-bit chunk type.\
+/// It is also viewed as an element in `GF(2^128)` with polynomial `x^128 + x^7 + x^2 + x + 1`\
+/// Use intrinsics whenever available to speedup.\
+/// Now support aarch64 and x86/x86_64
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 #[derive(Clone, Copy)]
 #[repr(transparent)]
@@ -24,6 +37,7 @@ pub struct Block(pub __m128i);
 
 impl Block {
     #[inline(always)]
+    /// New a Block with a byte slice with length 16.
     pub fn new(bytes: &[u8; 16]) -> Self {
         #[cfg(target_arch = "aarch64")]
         unsafe {
@@ -36,6 +50,8 @@ impl Block {
         }
     }
 
+    /// Compute the carry-less multiplication of two field elements.
+    /// The output consists of two Blocks.
     #[inline(always)]
     pub fn clmul(self, x: &Self) -> (Self, Self) {
         unsafe { self.clmul_unsafe(x) }
@@ -90,12 +106,14 @@ impl Block {
         }
     }
 
+    /// The multiplication of two field elements.
     #[inline(always)]
     pub fn gfmul(self, x: &Self) -> Self {
         let (a, b) = self.clmul(x);
         Block::reduce(&a, &b)
     }
 
+    /// Reduce the long polynomial (consists of two Blocks) with `x^128 + x^7 + x^2 + x + 1`
     #[inline(always)]
     pub fn reduce(x: &Block, y: &Block) -> Block {
         unsafe { Block::reduce_unsafe(x, y) }
@@ -176,17 +194,20 @@ impl Block {
         Block(veorq_u8(tmp3, tmp6))
     }
 
+    /// Get the least significant bit of the Block.
     #[inline(always)]
     pub fn get_lsb(&self) -> bool {
         let x = u128::from(*self);
         (x & 1) == 1
     }
 
+    /// Set the least significant bit to `1`.
     #[inline(always)]
     pub fn set_lsb(&mut self) {
         *self = (*self) | Block::from(1u128);
     }
 
+    /// Set the `pos` bit to `1`.
     #[inline(always)]
     pub fn set_bit(self, pos: u64) -> Self {
         assert!(pos < 128);
@@ -194,6 +215,7 @@ impl Block {
         self | Block::from(x)
     }
 
+    /// Convert a byte slice to Block.
     #[inline(always)]
     pub fn try_from_slice(bytes_slice: &[u8]) -> Option<Self> {
         if bytes_slice.len() != 16 {
@@ -204,6 +226,7 @@ impl Block {
         Some(Block::new(&bytes))
     }
 
+    /// Compute the inner product of two block vectors, without reducing the polynomial.
     #[inline(always)]
     pub fn inn_prdt_no_red(a: &Vec<Block>, b: &Vec<Block>) -> (Block, Block) {
         assert_eq!(a.len(), b.len());
@@ -215,12 +238,14 @@ impl Block {
             })
     }
 
+    /// Compute the inner product of two block vectors.
     #[inline(always)]
     pub fn inn_prdt_red(a: &Vec<Block>, b: &Vec<Block>) -> Block {
         let (x, y) = Block::inn_prdt_no_red(a, b);
         Block::reduce(&x, &y)
     }
 
+    /// Compute the exponential function of the block.
     #[inline(always)]
     pub fn pow(&self, exp: u64) -> Self {
         let mut h = *self;
@@ -239,9 +264,13 @@ impl Block {
         res
     }
 
+    /// Compute the inverse of the block.
     #[inline(always)]
     pub fn inverse(&self) -> Self {
         let mut h = *self;
+        if h == ZERO_BLOCK {
+            panic!("0 has no inverse!");
+        }
         let mut res = h;
         for _ in 1..127 {
             h = h * h;

@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use emp_rust::block::Block;
+use emp_tool::block::Block;
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha12Rng;
 
