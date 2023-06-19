@@ -1,3 +1,5 @@
+//! Useful utils used in the libraries
+
 /// Pack a bit vector into a byte vecotr.
 #[inline]
 pub fn pack_bits_to_bytes(bits: &Vec<bool>) -> Vec<u8> {

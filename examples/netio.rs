@@ -12,7 +12,6 @@ fn netio_perf(io: &mut NetIO, party: usize) {
         let mut length = 2usize;
         while length <= 8192 * 16 {
             let times = 1024 * 1024 * 128 / length;
-            // let times = 4;
             let start = Instant::now();
             let blks = vec![Block::default(); length];
             for _ in 0..times {
@@ -31,7 +30,6 @@ fn netio_perf(io: &mut NetIO, party: usize) {
         let mut length = 2usize;
         while length <= 8192 * 16 {
             let times = 1024 * 1024 * 128 / length;
-            // let times = 4;
             for _ in 0..times {
                 let _blk = io.recv_block_vec(length).unwrap();
             }
