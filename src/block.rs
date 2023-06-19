@@ -188,6 +188,13 @@ impl Block {
     }
 
     #[inline(always)]
+    pub fn set_bit(self, pos: u64) -> Self {
+        assert!(pos < 128);
+        let x = 1u128 << pos;
+        self | Block::from(x)
+    }
+
+    #[inline(always)]
     pub fn try_from_slice(bytes_slice: &[u8]) -> Option<Self> {
         if bytes_slice.len() != 16 {
             return None;
@@ -212,6 +219,35 @@ impl Block {
     pub fn inn_prdt_red(a: &Vec<Block>, b: &Vec<Block>) -> Block {
         let (x, y) = Block::inn_prdt_no_red(a, b);
         Block::reduce(x, y)
+    }
+
+    #[inline(always)]
+    pub fn pow(self, exp: u64) -> Self {
+        let mut h = self;
+        let mut res = if (exp & 1) == 1 {
+            h
+        } else {
+            Block::from(1u128)
+        };
+
+        for i in 1..(64 - exp.leading_zeros()) {
+            h = h * h;
+            if (exp >> i) & 1 == 1 {
+                res = h * res;
+            }
+        }
+        res
+    }
+
+    #[inline(always)]
+    pub fn inverse(self) -> Self {
+        let mut h = self;
+        let mut res = self;
+        for _ in 1..127 {
+            h = h * h;
+            res = res * h;
+        }
+        res * res
     }
 }
 
@@ -246,8 +282,8 @@ impl From<u128> for Block {
 impl PartialEq for Block {
     #[inline(always)]
     fn eq(&self, other: &Self) -> bool {
-        let x: u128 = unsafe { mem::transmute(*self) };
-        let y: u128 = unsafe { mem::transmute(*other) };
+        let x: u128 = (*self).into();
+        let y: u128 = (*other).into();
         x == y
     }
 }
@@ -481,6 +517,20 @@ fn inn_prdt_test() {
 
     assert_eq!(c, Block::inn_prdt_no_red(&a, &b));
     assert_eq!(d, Block::inn_prdt_red(&a, &b));
+}
+
+#[test]
+fn pow_inverse_test() {
+    let one = Block::from(1u128);
+    let exp = rand::random::<u64>() % 100;
+    let x = Block::from(rand::random::<u128>());
+    let mut pow = one;
+
+    for _ in 0..exp {
+        pow = pow * x;
+    }
+    assert_eq!(pow, x.pow(exp));
+    assert_eq!(one, x * x.inverse());
 }
 
 #[test]

@@ -20,6 +20,8 @@ fn criterion_benchmark(c: &mut Criterion) {
     let t = x.clone();
     let f = y.clone();
 
+    let exp = rand::random::<u64>();
+
     c.bench_function("Block::clmul", move |bench| {
         bench.iter(|| {
             black_box(a.clmul(&b));
@@ -89,6 +91,18 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("Block::inn_prod_red", move |bench| {
         bench.iter(|| {
             black_box(Block::inn_prdt_red(&t, &f));
+        });
+    });
+
+    c.bench_function("Block::pow", move |bench| {
+        bench.iter(|| {
+            black_box(a.pow(exp));
+        });
+    });
+
+    c.bench_function("Block::inverse", move |bench| {
+        bench.iter(|| {
+            black_box(a.inverse());
         });
     });
 }
