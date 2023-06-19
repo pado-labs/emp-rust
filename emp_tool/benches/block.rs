@@ -20,7 +20,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let t = x.clone();
     let f = y.clone();
 
-    let exp = rand::random::<u64>();
+    let exp = rand::random::<u128>();
 
     c.bench_function("Block::clmul", move |bench| {
         bench.iter(|| {

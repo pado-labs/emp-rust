@@ -38,7 +38,6 @@ fn netio_perf(io: &mut NetIO, party: usize) {
     }
 }
 
-
 // Run the main function in two terminals
 // cargo run --release --example netio -- --party 1
 // cargo run --release --example netio -- --party 2

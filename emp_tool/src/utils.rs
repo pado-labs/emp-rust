@@ -2,7 +2,7 @@
 
 /// Pack a bit vector into a byte vecotr.
 #[inline(always)]
-pub fn pack_bits_to_bytes(bits: &Vec<bool>) -> Vec<u8> {
+pub fn pack_bits_to_bytes(bits: &[bool]) -> Vec<u8> {
     let nbytes = (bits.len() - 1) / 8 + 1;
     let mut bytes = vec![0; nbytes];
     for i in 0..nbytes {
@@ -18,7 +18,7 @@ pub fn pack_bits_to_bytes(bits: &Vec<bool>) -> Vec<u8> {
 
 /// Unpack a byte vector to a bit vector with length size.
 #[inline(always)]
-pub fn unpack_bytes_to_bits(bytes: &Vec<u8>, size: usize) -> Vec<bool> {
+pub fn unpack_bytes_to_bits(bytes: &[u8], size: usize) -> Vec<bool> {
     let mut bits = Vec::<bool>::new();
     for (i, byte) in bytes.iter().enumerate() {
         for j in 0..8 {

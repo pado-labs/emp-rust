@@ -16,7 +16,7 @@ pub const ALICE: usize = 1;
 /// Party BOB
 pub const BOB: usize = 2;
 
-/// The constant block with value `0`. 
+/// The constant block with value `0`.
 pub const ZERO_BLOCK: Block = Block(unsafe { mem::transmute(0u128) });
 
 /// The constant block with value `0xFFFF_FFFF_FFFF_FFFF`.
