@@ -91,19 +91,19 @@ impl Block {
     }
 
     #[inline(always)]
-    pub fn gfmul(self, x: Self) -> Self {
-        let (a, b) = self.clmul(&x);
-        Block::reduce(a, b)
+    pub fn gfmul(self, x: &Self) -> Self {
+        let (a, b) = self.clmul(x);
+        Block::reduce(&a, &b)
     }
 
     #[inline(always)]
-    pub fn reduce(x: Block, y: Block) -> Block {
+    pub fn reduce(x: &Block, y: &Block) -> Block {
         unsafe { Block::reduce_unsafe(x, y) }
     }
 
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    unsafe fn reduce_unsafe(x: Block, y: Block) -> Block {
+    unsafe fn reduce_unsafe(x: &Block, y: &Block) -> Block {
         let tmp3 = x.0;
         let tmp6 = y.0;
         let xmmmask = _mm_setr_epi32(-1, 0x0, 0x0, 0x0);
@@ -134,7 +134,7 @@ impl Block {
     #[inline]
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "neon")]
-    unsafe fn reduce_unsafe(x: Block, y: Block) -> Block {
+    unsafe fn reduce_unsafe(x: &Block, y: &Block) -> Block {
         let tmp3 = x.0;
         let tmp6 = y.0;
         let xmmmask = vreinterpretq_u8_u32(vld1q_u32([0xffffffff, 0x0, 0x0, 0x0].as_ptr()));
@@ -218,7 +218,7 @@ impl Block {
     #[inline(always)]
     pub fn inn_prdt_red(a: &Vec<Block>, b: &Vec<Block>) -> Block {
         let (x, y) = Block::inn_prdt_no_red(a, b);
-        Block::reduce(x, y)
+        Block::reduce(&x, &y)
     }
 
     #[inline(always)]
@@ -395,7 +395,7 @@ impl Mul for Block {
     type Output = Self;
     #[inline(always)]
     fn mul(self, rhs: Self) -> Self::Output {
-        self.gfmul(rhs)
+        self.gfmul(&rhs)
     }
 }
 
@@ -429,7 +429,7 @@ fn reduce_test() {
     let x = Block::from(0xd857e24982ab861c929633d5d36f0451);
     let y = Block::from(0x1d1e1f2c592e7c45d7946a682e55e763);
     let z = Block::from(0x040229a09a5ed12e7e4e10da323506d2);
-    assert_eq!(z, Block::reduce(x, y));
+    assert_eq!(z, Block::reduce(&x, &y));
 }
 
 #[test]
@@ -438,7 +438,7 @@ fn gfmul_test() {
     let y = Block::from(0x48692853686179295b477565726f6e5d);
     let z = Block::from(0x040229a09a5ed12e7e4e10da323506d2);
 
-    assert_eq!(z, x.gfmul(y));
+    assert_eq!(z, x.gfmul(&y));
     assert_eq!(z, x * y);
 
     x *= y;

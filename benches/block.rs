@@ -60,13 +60,13 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("Block::gfmul", move |bench| {
         bench.iter(|| {
-            black_box(a.gfmul(b));
+            black_box(a.gfmul(&b));
         });
     });
 
     c.bench_function("Block::reduce", move |bench| {
         bench.iter(|| {
-            black_box(Block::reduce(a, b));
+            black_box(Block::reduce(&a, &b));
         });
     });
 
