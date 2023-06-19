@@ -222,8 +222,8 @@ impl Block {
     }
 
     #[inline(always)]
-    pub fn pow(self, exp: u64) -> Self {
-        let mut h = self;
+    pub fn pow(&self, exp: u64) -> Self {
+        let mut h = *self;
         let mut res = if (exp & 1) == 1 {
             h
         } else {
@@ -240,9 +240,9 @@ impl Block {
     }
 
     #[inline(always)]
-    pub fn inverse(self) -> Self {
-        let mut h = self;
-        let mut res = self;
+    pub fn inverse(&self) -> Self {
+        let mut h = *self;
+        let mut res = h;
         for _ in 1..127 {
             h = h * h;
             res = res * h;

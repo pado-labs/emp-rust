@@ -64,3 +64,11 @@ pub trait IOChannel {
         Ok(unpack_bytes_to_bits(&bytes, len))
     }
 }
+
+use structopt::StructOpt;
+
+#[derive(StructOpt, Debug)]
+pub struct CommandLineOpt {
+    #[structopt(short, long, default_value = "-1")]
+    pub party: usize,
+}

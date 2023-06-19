@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 rand = {version = "0.8"}
+structopt = {version = "0.3.20"}
 
 [dev-dependencies]
 rand = {version = "0.8"}
@@ -19,3 +20,7 @@ opt-level = 3
 [[bench]]
 name = "block"
 harness = false
+
+[[example]]
+name = "netio"
+path = "examples/netio.rs"
