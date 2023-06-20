@@ -30,9 +30,9 @@ pub trait IOChannel {
 
     /// Send a vector of blocks to the channel.
     #[inline(always)]
-    fn send_block_vec(&mut self, buffer: &Vec<Block>) -> Result<()> {
-        for i in 0..buffer.len() {
-            self.send_block(&buffer[i])?;
+    fn send_block_vec(&mut self, buffer: &[Block]) -> Result<()> {
+        for x in buffer.iter(){
+            self.send_block(x)?;
         }
         Ok(())
     }
@@ -67,8 +67,8 @@ pub trait IOChannel {
 
     /// Send a vector of bool values to the channel.
     #[inline(always)]
-    fn send_bool_vec(&mut self, buffer: &Vec<bool>) -> Result<()> {
-        let bytes = pack_bits_to_bytes(&buffer);
+    fn send_bool_vec(&mut self, buffer: &[bool]) -> Result<()> {
+        let bytes = pack_bits_to_bytes(buffer);
         self.send_bytes(&bytes)?;
         Ok(())
     }

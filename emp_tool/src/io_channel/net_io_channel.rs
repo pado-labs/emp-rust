@@ -1,7 +1,9 @@
 use crate::constants::NETWORK_BUFFER_SIZE;
 use crate::io_channel::IOChannel;
+use core::time;
 use std::io::{BufReader, BufWriter, Read, Result, Write};
 use std::net::{TcpListener, TcpStream, ToSocketAddrs};
+use std::thread::sleep;
 
 /// A TCP network stream with buffer `NETWORK_BUFFER_SIZE`.\
 /// This NetIO struct implements the IOChannel trait.
@@ -31,7 +33,7 @@ pub struct NetIO {
 impl NetIO {
     /// New a NetIO with socket address `addr`.\
     /// Determine the server with `is_server`.
-    pub fn new<A: ToSocketAddrs>(is_server: bool, addr: A) -> Result<Self> {
+    pub fn new<A: ToSocketAddrs + Copy>(is_server: bool, addr: A) -> Result<Self> {
         let stream = if is_server {
             let listener = TcpListener::bind(addr).expect("Failed to bind!");
             let (stream, _) = listener.accept().expect("Failed to accept connection");
@@ -41,8 +43,18 @@ impl NetIO {
 
             stream
         } else {
-            let stream = TcpStream::connect(addr).expect("Failed to connect to server");
-            println!("Connected!");
+            let stream = loop {
+                let _stream = TcpStream::connect(addr);
+                match _stream {
+                    Ok(_stream) => {
+                        println!("connected!");
+                        break _stream;
+                    }
+                    Err(_) => sleep(time::Duration::from_millis(500)),
+                }
+            };
+            // let stream = TcpStream::connect(addr).expect("Failed to connect to server");
+            // println!("Connected!");
 
             stream.set_nodelay(true).expect("Failed to set TCP nodelay");
 

@@ -204,7 +204,7 @@ impl Block {
     /// Set the least significant bit to `1`.
     #[inline(always)]
     pub fn set_lsb(&mut self) {
-        *self = (*self) | Block::from(1u128);
+        *self |= Block::from(1u128);
     }
 
     /// Set the `pos` bit to `1`.
@@ -247,7 +247,7 @@ impl Block {
 
     /// Compute the exponential function of the block.
     #[inline(always)]
-    pub fn pow(&self, exp: u64) -> Self {
+    pub fn pow(&self, exp: u128) -> Self {
         let mut h = *self;
         let mut res = if (exp & 1) == 1 {
             h
@@ -255,7 +255,7 @@ impl Block {
             Block::from(1u128)
         };
 
-        for i in 1..(64 - exp.leading_zeros()) {
+        for i in 1..(128 - exp.leading_zeros()) {
             h = h * h;
             if (exp >> i) & 1 == 1 {
                 res = h * res;
@@ -273,8 +273,8 @@ impl Block {
         }
         let mut res = h;
         for _ in 1..127 {
-            h = h * h;
-            res = res * h;
+            h *= h;
+            res *= h;
         }
         res * res
     }
@@ -551,7 +551,7 @@ fn inn_prdt_test() {
 #[test]
 fn pow_inverse_test() {
     let one = Block::from(1u128);
-    let exp = rand::random::<u64>() % 100;
+    let exp = rand::random::<u128>() % 100;
     let x = Block::from(rand::random::<u128>());
     let mut pow = one;
 
