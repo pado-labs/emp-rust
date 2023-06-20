@@ -24,7 +24,7 @@ impl Aes {
     }
 
     /// Encrypt many blocks
-    pub fn ecb_encrypt_blks<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
+    pub fn encrypt_blocks<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
         let mut buf: Vec<GenericArray<u8, U16>> =
             blks.iter().map(|x| GenericArray::from(*x)).collect();
         self.0.encrypt_blocks(&mut buf);
