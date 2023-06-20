@@ -21,10 +21,11 @@ jobs:
           arch: [x86, x86_64, aarch64]
 
     steps:
-    - name: Setup Rust ${{matrix.rust-toolchain}}
-      uses: actions/setup-rust@v1
+    - name: Setup Rust
+      uses: actions-rs/toolchain@v1
       with:
-       rust-version: ${{matrix.rust-toolchain}}
+       toolchain: ${{matrix.rust-toolchain}}
+       component: rustfmt
       
     - name: Check out code 
       uses: actions/checkout@v3
