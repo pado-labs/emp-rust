@@ -10,7 +10,6 @@ use std::io::Result;
 
 /// The trait IOChannel
 pub trait IOChannel {
-
     /// Send bytes into the channel.
     /// This function should be implemented.
     fn send_bytes(&mut self, buffer: &[u8]) -> Result<()>;

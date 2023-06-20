@@ -8,7 +8,7 @@ use std::net::{TcpListener, TcpStream, ToSocketAddrs};
 pub struct NetIO {
     /// Indicate it is a server or a client.
     _is_server: bool,
-    
+
     /// A buffered reader that is used to receive messages.
     reader: BufReader<TcpStream>,
 
@@ -95,7 +95,6 @@ impl Drop for NetIO {
         self.flush().unwrap();
     }
 }
-
 
 #[test]
 fn io_test() {
