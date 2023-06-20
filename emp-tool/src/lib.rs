@@ -1,6 +1,7 @@
 #![deny(missing_docs)]
 
 //! This crate defines and implements basic tools for MPC
+pub mod aes;
 pub mod block;
 pub mod constants;
 pub mod io_channel;

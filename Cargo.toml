@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "emp_tool"
+    "emp-tool"
 ]
 
 [profile.release]

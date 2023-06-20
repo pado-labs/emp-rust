@@ -15,6 +15,8 @@ use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
+use generic_array::{typenum::U16, GenericArray};
+
 use crate::ZERO_BLOCK;
 
 /// A 128-bit chunk type.\
@@ -278,6 +280,7 @@ impl Block {
         }
         res * res
     }
+
 }
 
 impl Default for Block {
@@ -304,6 +307,20 @@ impl From<Block> for u128 {
 impl From<u128> for Block {
     #[inline(always)]
     fn from(m: u128) -> Block {
+        unsafe { mem::transmute(m) }
+    }
+}
+
+impl From<Block> for GenericArray<u8, U16> {
+    #[inline(always)]
+    fn from(m: Block) -> Self {
+        unsafe { mem::transmute(m) }
+    }
+}
+
+impl From<GenericArray<u8, U16>> for Block {
+    #[inline(always)]
+    fn from(m: GenericArray<u8, U16>) -> Self {
         unsafe { mem::transmute(m) }
     }
 }
