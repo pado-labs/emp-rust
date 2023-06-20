@@ -47,7 +47,7 @@ impl NetIO {
                 let _stream = TcpStream::connect(addr);
                 match _stream {
                     Ok(_stream) => {
-                        println!("connected!");
+                        println!("Connected!");
                         break _stream;
                     }
                     Err(_) => sleep(time::Duration::from_millis(500)),
