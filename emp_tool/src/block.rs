@@ -24,7 +24,7 @@ use crate::ZERO_BLOCK;
 #[cfg(target_arch = "aarch64")]
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct Block(pub uint8x16_t);
+pub struct Block(pub uint32x4_t);
 
 /// A 128-bit chunk type.\
 /// It is also viewed as an element in `GF(2^128)` with polynomial `x^128 + x^7 + x^2 + x + 1`\
@@ -41,7 +41,7 @@ impl Block {
     pub fn new(bytes: &[u8; 16]) -> Self {
         #[cfg(target_arch = "aarch64")]
         unsafe {
-            Self(vld1q_u8(bytes.as_ptr()))
+            Self(vld1q_u32(bytes.as_ptr() as *const u32))
         }
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -63,30 +63,35 @@ impl Block {
     unsafe fn clmul_unsafe(self, x: &Self) -> (Self, Self) {
         let h = self.0;
         let y = x.0;
-        let z = vdupq_n_u8(0);
+        let z = vdupq_n_u32(0);
 
-        let a_lo = mem::transmute(vget_low_u64(vreinterpretq_u64_u8(h)));
-        let a_hi = mem::transmute(vget_high_u64(vreinterpretq_u64_u8(h)));
-        let b_lo = mem::transmute(vget_low_u64(vreinterpretq_u64_u8(y)));
-        let b_hi = mem::transmute(vget_high_u64(vreinterpretq_u64_u8(y)));
+        let a_lo = mem::transmute(vget_low_u64(vreinterpretq_u64_u32(h)));
+        let a_hi = mem::transmute(vget_high_u64(vreinterpretq_u64_u32(h)));
+        let b_lo = mem::transmute(vget_low_u64(vreinterpretq_u64_u32(y)));
+        let b_hi = mem::transmute(vget_high_u64(vreinterpretq_u64_u32(y)));
 
         let tmp3 = mem::transmute(vmull_p64(a_lo, b_lo));
         let tmp4 = mem::transmute(vmull_p64(a_hi, b_lo));
         let tmp5 = mem::transmute(vmull_p64(a_lo, b_hi));
         let tmp6 = mem::transmute(vmull_p64(a_hi, b_hi));
 
-        let tmp4 = veorq_u8(tmp4, tmp5);
-        let tmp5 = vextq_u8(z, tmp4, 8);
-        let tmp3 = veorq_u8(tmp3, tmp5);
-        let tmp4 = vextq_u8(tmp4, z, 8);
-        let tmp6 = veorq_u8(tmp6, tmp4);
+        let tmp4 = veorq_u32(tmp4, tmp5);
+        let tmp5 = vextq_u32(z, tmp4, 2);
+        let tmp3 = veorq_u32(tmp3, tmp5);
+        let tmp4 = vextq_u32(tmp4, z, 2);
+        let tmp6 = veorq_u32(tmp6, tmp4);
 
         (Block(tmp3), Block(tmp6))
     }
 
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    #[target_feature(enable = "pclmulqdq", enable = "sse4.1",enable = "sse4.2", enable = "avx2")]
+    #[target_feature(
+        enable = "pclmulqdq",
+        enable = "sse4.1",
+        enable = "sse4.2",
+        enable = "avx2"
+    )]
     unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
         unsafe {
             let h = self.0;
@@ -121,7 +126,7 @@ impl Block {
 
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    #[target_feature(enable = "sse4.1",enable = "sse4.2", enable = "avx2")]
+    #[target_feature(enable = "sse4.1", enable = "sse4.2", enable = "avx2")]
     unsafe fn reduce_unsafe(x: &Block, y: &Block) -> Block {
         let tmp3 = x.0;
         let tmp6 = y.0;
@@ -156,43 +161,31 @@ impl Block {
     unsafe fn reduce_unsafe(x: &Block, y: &Block) -> Block {
         let tmp3 = x.0;
         let tmp6 = y.0;
-        let xmmmask = vreinterpretq_u8_u32(vld1q_u32([0xffffffff, 0x0, 0x0, 0x0].as_ptr()));
-        let tmp7 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(-31)));
-        let tmp8 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(-30)));
-        let tmp9 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(-25)));
+        let xmmmask = vld1q_u32([0xffffffff, 0x0, 0x0, 0x0].as_ptr());
+        let tmp7 = vshlq_u32(tmp6, vdupq_n_s32(-31));
+        let tmp8 = vshlq_u32(tmp6, vdupq_n_s32(-30));
+        let tmp9 = vshlq_u32(tmp6, vdupq_n_s32(-25));
 
-        let tmp7 = veorq_u8(tmp7, tmp8);
-        let tmp7 = veorq_u8(tmp7, tmp9);
+        let tmp7 = veorq_u32(tmp7, tmp8);
+        let tmp7 = veorq_u32(tmp7, tmp9);
 
-        let tmp8 = vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), 147 & (0x3)));
-        let tmp8 = vsetq_lane_u32(
-            vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), (147 >> 2) & (0x3)),
-            tmp8,
-            1,
-        );
-        let tmp8 = vsetq_lane_u32(
-            vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), (147 >> 4) & (0x3)),
-            tmp8,
-            2,
-        );
-        let tmp8 = vreinterpretq_u8_u32(vsetq_lane_u32(
-            vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), (147 >> 6) & (0x3)),
-            tmp8,
-            3,
-        ));
+        let tmp8 = vmovq_n_u32(vgetq_lane_u32(tmp7, 147 & (0x3)));
+        let tmp8 = vsetq_lane_u32(vgetq_lane_u32(tmp7, (147 >> 2) & (0x3)), tmp8, 1);
+        let tmp8 = vsetq_lane_u32(vgetq_lane_u32(tmp7, (147 >> 4) & (0x3)), tmp8, 2);
+        let tmp8 = vsetq_lane_u32(vgetq_lane_u32(tmp7, (147 >> 6) & (0x3)), tmp8, 3);
 
-        let tmp7 = vandq_u8(xmmmask, tmp8);
-        let tmp8 = vbicq_u8(tmp8, xmmmask);
-        let tmp3 = veorq_u8(tmp3, tmp8);
-        let tmp6 = veorq_u8(tmp6, tmp7);
+        let tmp7 = vandq_u32(xmmmask, tmp8);
+        let tmp8 = vbicq_u32(tmp8, xmmmask);
+        let tmp3 = veorq_u32(tmp3, tmp8);
+        let tmp6 = veorq_u32(tmp6, tmp7);
 
-        let tmp10 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(1)));
-        let tmp3 = veorq_u8(tmp3, tmp10);
-        let tmp11 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(2)));
-        let tmp3 = veorq_u8(tmp3, tmp11);
-        let tmp12 = vreinterpretq_u8_u32(vshlq_u32(vreinterpretq_u32_u8(tmp6), vdupq_n_s32(7)));
-        let tmp3 = veorq_u8(tmp3, tmp12);
-        Block(veorq_u8(tmp3, tmp6))
+        let tmp10 = vshlq_u32(tmp6, vdupq_n_s32(1));
+        let tmp3 = veorq_u32(tmp3, tmp10);
+        let tmp11 = vshlq_u32(tmp6, vdupq_n_s32(2));
+        let tmp3 = veorq_u32(tmp3, tmp11);
+        let tmp12 = vshlq_u32(tmp6, vdupq_n_s32(7));
+        let tmp3 = veorq_u32(tmp3, tmp12);
+        Block(veorq_u32(tmp3, tmp6))
     }
 
     /// Get the least significant bit of the Block.
@@ -358,7 +351,7 @@ impl BitXor for Block {
     fn bitxor(self, other: Self) -> Self::Output {
         #[cfg(target_arch = "aarch64")]
         unsafe {
-            Self(veorq_u8(self.0, other.0))
+            Self(veorq_u32(self.0, other.0))
         }
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -381,7 +374,7 @@ impl BitOr for Block {
     fn bitor(self, rhs: Self) -> Self::Output {
         #[cfg(target_arch = "aarch64")]
         unsafe {
-            Self(vorrq_u8(self.0, rhs.0))
+            Self(vorrq_u32(self.0, rhs.0))
         }
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -404,7 +397,7 @@ impl BitAnd for Block {
     fn bitand(self, rhs: Self) -> Self::Output {
         #[cfg(target_arch = "aarch64")]
         unsafe {
-            Self(vandq_u8(self.0, rhs.0))
+            Self(vandq_u32(self.0, rhs.0))
         }
 
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
