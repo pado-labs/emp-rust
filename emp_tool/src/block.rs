@@ -86,7 +86,7 @@ impl Block {
 
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    #[target_feature(enable = "pclmulqdq")]
+    #[target_feature(enable = "pclmulqdq", enable = "sse4.1",enable = "sse4.2", enable = "avx2")]
     unsafe fn clmul_unsafe(self, x: &Self) -> (Block, Block) {
         unsafe {
             let h = self.0;
@@ -121,6 +121,7 @@ impl Block {
 
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[target_feature(enable = "sse4.1",enable = "sse4.2", enable = "avx2")]
     unsafe fn reduce_unsafe(x: &Block, y: &Block) -> Block {
         let tmp3 = x.0;
         let tmp6 = y.0;
