@@ -20,7 +20,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("aes::encrypt_blocks", move |bench| {
+    c.bench_function("aes::encrypt_blocks::<8>", move |bench| {
         let key = rand::random::<Block>();
         let aes = Aes::new(&key);
         bench.iter(|| {

@@ -25,14 +25,15 @@ impl Aes {
 
     /// Encrypt many blocks
     pub fn encrypt_blocks<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
-        let mut buf: Vec<GenericArray<u8, U16>> =
-            blks.iter().map(|x| GenericArray::from(*x)).collect();
-        self.0.encrypt_blocks(&mut buf);
+        blks.iter().map(|x|self.encrypt_block(x)).collect::<Vec<Block>>().try_into().unwrap()
+        // let mut buf: Vec<GenericArray<u8, U16>> =
+        //     blks.iter().map(|x| GenericArray::from(*x)).collect();
+        // self.0.encrypt_blocks(&mut buf);
 
-        buf.iter()
-            .map(|x| Block::from(*x))
-            .collect::<Vec<Block>>()
-            .try_into()
-            .unwrap()
+        // buf.iter()
+        //     .map(|x| Block::from(*x))
+        //     .collect::<Vec<Block>>()
+        //     .try_into()
+        //     .unwrap()
     }
 }
