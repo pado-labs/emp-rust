@@ -22,12 +22,12 @@ jobs:
 
     steps:
     - name: Setup Rust ${{matrix.rust-toolchain}}
-    - uses: actions/setup-rust@v1
+      uses: actions/setup-rust@v1
       with:
        rust-version: ${{matrix.rust-toolchain}}
       
     - name: Check out code 
-    - uses: actions/checkout@v3
+      uses: actions/checkout@v3
     
     - name: Build and test
       run: |
