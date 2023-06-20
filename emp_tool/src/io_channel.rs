@@ -31,7 +31,7 @@ pub trait IOChannel {
     /// Send a vector of blocks to the channel.
     #[inline(always)]
     fn send_block_vec(&mut self, buffer: &[Block]) -> Result<()> {
-        for x in buffer.iter(){
+        for x in buffer.iter() {
             self.send_block(x)?;
         }
         Ok(())
