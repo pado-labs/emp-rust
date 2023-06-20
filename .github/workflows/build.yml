@@ -32,7 +32,7 @@ jobs:
     
     - name: Build and test
       run: |
-        cargo fmt --verbose
+        cargo fmt -- --check
         cargo build --verbose
         cargo test --verbose
         
