@@ -6,6 +6,7 @@ pub mod block;
 pub mod constants;
 pub mod io_channel;
 pub mod utils;
+pub mod sse2neon;
 
 pub use block::Block;
 pub use constants::{ALICE, BOB, NETWORK_BUFFER_SIZE, ONES_BLOCK, SELECT_MASK, ZERO_BLOCK};
