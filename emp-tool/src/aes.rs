@@ -142,3 +142,11 @@ impl AesEmp {
         }
     }
 }
+
+#[test]
+fn aes_new_test(){
+    let aes = AesEmp::new(Block::default());
+    for i in 0..11{
+        println!("{}", aes.rd_key[i]);
+    }
+}
