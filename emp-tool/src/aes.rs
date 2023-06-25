@@ -89,7 +89,7 @@ impl AesEmp {
 
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-    #[target_feature(enable = "aes")]
+    #[target_feature(enable = "aes",enable = "sse2")]
     unsafe fn aes_init(key: Block) -> Self {
         let mut kp = [Block::default(); 11];
         kp[0] = key;
