@@ -58,14 +58,14 @@ macro_rules! expand_assist_x86 {
     ($v1:ident,$v2:ident,$v3:ident,$v4:ident,$sc:expr,$ac:expr) => {
         $v2 = _mm_aeskeygenassist_si128($v4, $ac);
         $v3 = _mm_castps_si128(_mm_shuffle_ps(
-            _mmcastsi128_ps($v3),
+            _mm_castsi128_ps($v3),
             _mm_castsi128_ps($v1),
             16,
         ));
         $v1 = _mm_xor_si128($v1, $v3);
         $v3 = _mm_castps_si128(_mm_shuffle_ps(
-            _mmcastsi128_ps($v3),
-            _mmcastsi128_ps($v1),
+            _mm_castsi128_ps($v3),
+            _mm_castsi128_ps($v1),
             140,
         ));
         $v1 = _mm_xor_si128($v1, $v3);
