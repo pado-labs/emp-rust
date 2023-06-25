@@ -4,6 +4,15 @@ use aes::{
     Aes128Enc,
 };
 
+#[cfg(target_arch = "aarch64")]
+use core::arch::aarch64::*;
+
+#[cfg(target_arch = "x86")]
+use core::arch::x86::*;
+
+#[cfg(target_arch = "x86_64")]
+use core::arch::x86_64::*;
+
 use crate::Block;
 
 ///The AES 128 struct
@@ -116,7 +125,7 @@ impl AesEmp {
         kp[9] = Block(x0);
 
         expand_assist_x86!(x0, x1, x2, x0, 255, 54);
-        kp[10] = x0;
+        kp[10] = Block(x0);
         Self {
             rd_key: kp,
             rounds: 10,
