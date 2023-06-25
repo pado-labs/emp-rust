@@ -64,8 +64,8 @@ macro_rules! expand_assist_x86 {
         ));
         $v1 = _mm_xor_si128($v1, $v3);
         $v3 = _mm_castps_si128(_mm_shuffle_ps(
-            _mm_shuffle_ps($v3),
-            _mm_shuffle_ps($v1),
+            _mmcastsi128_ps($v3),
+            _mmcastsi128_ps($v1),
             140,
         ));
         $v1 = _mm_xor_si128($v1, $v3);
