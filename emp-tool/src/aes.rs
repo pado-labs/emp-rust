@@ -1,4 +1,7 @@
 //! Implement aes128
+// #![cfg(target_arch = "aarch64")]
+// #![feature(stdsimd)]
+
 use aes::{
     cipher::{generic_array::GenericArray, BlockEncrypt, KeyInit},
     Aes128Enc,
@@ -13,12 +16,17 @@ use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
+#[cfg(target_arch = "aarch64")]
 use crate::sse2neon::AES_SBOX;
 use crate::Block;
+
+#[cfg(target_arch = "aarch64")]
 use crate::{
     aeskeygenassist_si128, castps_si128, castsi128_ps, cvtsi128_si32, shuffle_epi32, shuffle_ps,
     xor_si128,
 };
+
+#[cfg(target_arch = "aarch64")]
 use std::mem;
 
 ///The AES 128 struct
@@ -73,6 +81,7 @@ macro_rules! expand_assist_x86 {
     };
 }
 
+#[allow(unused_macros)]
 macro_rules! expand_assist_arm {
     ($v1:expr,$v2:expr,$v3:expr,$v4:expr, $sc:expr,$ac:expr) => {
         $v2 = aeskeygenassist_si128!($v4, $ac);
