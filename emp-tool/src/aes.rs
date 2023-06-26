@@ -26,31 +26,26 @@ pub struct Aes(Aes128Enc);
 
 impl Aes {
     /// New a Aes instance with `key`
-    pub fn new(key: &Block) -> Self {
-        let _key: [u8; 16] = (*key).into();
+    #[inline(always)]
+    pub fn new(key: Block) -> Self {
+        let _key: [u8; 16] = key.into();
         Self(Aes128Enc::new_from_slice(&_key).unwrap())
     }
 
     /// Encrypt one block
-    pub fn encrypt_block(&self, blk: &Block) -> Block {
-        let mut buf = GenericArray::from(*blk);
+    #[inline(always)]
+    pub fn encrypt_block(&self, blk: Block) -> Block {
+        let mut buf = GenericArray::from(blk);
         self.0.encrypt_block(&mut buf);
-        Block::try_from_slice(buf.as_slice()).unwrap()
+        Block::from(buf)
     }
 
     /// Encrypt many blocks
-    pub fn encrypt_blocks<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
-        // blks.iter().map(|x|self.encrypt_block(x)).collect::<Vec<Block>>().try_into().unwrap()
-        let mut buf: Vec<GenericArray<u8, U16>> =
-            blks.iter().map(|&x| GenericArray::from(x)).collect();
-
+    #[inline(always)]
+    pub fn encrypt_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
+        let mut buf = blks.map(|x| GenericArray::from(x));
         self.0.encrypt_blocks(&mut buf);
-
-        buf.iter()
-            .map(|x| Block::from(*x))
-            .collect::<Vec<Block>>()
-            .try_into()
-            .unwrap()
+        buf.map(|x| Block::from(x))
     }
 }
 
@@ -246,11 +241,7 @@ impl AesEmp {
             ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.rd_key[self.rounds].0);
         }
 
-        ctxt.iter()
-            .map(|&x| Block(x))
-            .collect::<Vec<Block>>()
-            .try_into()
-            .unwrap()
+        ctxt.map(|x| Block(x))
     }
 
     #[inline]
@@ -258,11 +249,7 @@ impl AesEmp {
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_many_backend<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
         let mut ctxt = [vdupq_n_u8(0); N];
-        ctxt.iter()
-            .map(|&x| Block(x))
-            .collect::<Vec<Block>>()
-            .try_into()
-            .unwrap()
+        ctxt.map(|x| Block(x))
     }
 }
 
