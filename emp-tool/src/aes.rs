@@ -52,7 +52,6 @@ impl Aes {
 ///AES related to EMP
 pub struct AesEmp {
     rd_key: [Block; 11],
-    rounds: usize,
 }
 
 #[allow(unused_macros)]
@@ -136,7 +135,6 @@ impl AesEmp {
         kp[10] = Block(x0);
         Self {
             rd_key: kp,
-            rounds: 10,
         }
     }
 
@@ -181,7 +179,6 @@ impl AesEmp {
         kp[10] = Block(x0);
         Self {
             rd_key: kp,
-            rounds: 10,
         }
     }
 
@@ -196,11 +193,11 @@ impl AesEmp {
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_backend(&self, blk: Block) -> Block {
         let mut ctxt = _mm_xor_si128(blk.0, self.rd_key[0].0);
-        for i in 1..self.rounds {
+        for i in 1..10 {
             ctxt = _mm_aesenc_si128(ctxt, self.rd_key[i].0);
         }
 
-        ctxt = _mm_aesenclast_si128(ctxt, self.rd_key[self.rounds].0);
+        ctxt = _mm_aesenclast_si128(ctxt, self.rd_key[10].0);
         Block(ctxt)
     }
 
@@ -231,14 +228,14 @@ impl AesEmp {
             ctxt[i] = _mm_xor_si128(ctxt[i], self.rd_key[0].0);
         }
 
-        for j in 1..self.rounds {
+        for j in 1..10 {
             for i in 0..N {
                 ctxt[i] = _mm_aesenc_si128(ctxt[i], self.rd_key[j].0);
             }
         }
 
         for i in 0..N {
-            ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.rd_key[self.rounds].0);
+            ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.rd_key[10].0);
         }
 
         ctxt.map(|x| Block(x))
