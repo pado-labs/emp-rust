@@ -1,12 +1,4 @@
 //! Implement aes128
-// #![cfg(target_arch = "aarch64")]
-// #![feature(stdsimd)]
-
-use aes::{
-    cipher::{generic_array::GenericArray, BlockEncrypt, KeyInit},
-    Aes128Enc,
-};
-
 #[cfg(target_arch = "aarch64")]
 use core::arch::aarch64::*;
 
@@ -30,35 +22,7 @@ use std::mem;
 
 use crate::Block;
 ///The AES 128 struct
-pub struct Aes(Aes128Enc);
-
-impl Aes {
-    /// New a Aes instance with `key`
-    #[inline(always)]
-    pub fn new(key: Block) -> Self {
-        let _key: [u8; 16] = key.into();
-        Self(Aes128Enc::new_from_slice(&_key).unwrap())
-    }
-
-    /// Encrypt one block
-    #[inline(always)]
-    pub fn encrypt_block(&self, blk: Block) -> Block {
-        let mut buf = GenericArray::from(blk);
-        self.0.encrypt_block(&mut buf);
-        Block::from(buf)
-    }
-
-    /// Encrypt many blocks
-    #[inline(always)]
-    pub fn encrypt_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
-        let mut buf = blks.map(|x| GenericArray::from(x));
-        self.0.encrypt_blocks(&mut buf);
-        buf.map(|x| Block::from(x))
-    }
-}
-
-///AES related to EMP
-pub struct AesEmp([Block; 11]);
+pub struct Aes([Block; 11]);
 
 #[allow(unused_macros)]
 macro_rules! expand_assist_x86 {
@@ -94,11 +58,11 @@ macro_rules! expand_assist_arm {
     };
 }
 
-impl AesEmp {
-    /// New AES
+impl Aes {
+    /// New an AES instance
     #[inline(always)]
     pub fn new(key: Block) -> Self {
-        unsafe { AesEmp::aes_init(key) }
+        unsafe { Aes::aes_init(key) }
     }
 
     #[inline]
@@ -265,15 +229,11 @@ impl AesEmp {
 
 #[test]
 fn aes_new_test() {
-    let aes = AesEmp::new(Block::default());
+    let aes = Aes::new(Block::default());
     let c = aes.encrypt_block(Block::default());
-    println!("{}", c);
-
+    let res = Block::from(0x2e2b34ca59fa4c883b2c8aefd44be966);
+    assert_eq!(c, res);
     let blks = [Block::default(); 8];
     let d = aes.encrypt_many_blocks::<8>(blks);
-
-    println!("encrypt many:");
-    for i in 0..8 {
-        println!("{}", d[i]);
-    }
+    assert_eq!(d, [res; 8]);
 }
