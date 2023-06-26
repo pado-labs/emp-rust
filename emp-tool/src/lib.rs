@@ -1,8 +1,9 @@
 #![deny(missing_docs)]
 
 //! This crate defines and implements basic tools for MPC
-#![cfg(target_arch = "aarch64")]
-#![feature(stdsimd)]
+// #![cfg(target_arch = "aarch64")]
+// #![feature(stdsimd)]
+#![cfg_attr(target_arch = "aarch64", feature(stdsimd))]
 pub mod aes;
 
 pub mod block;
