@@ -186,7 +186,7 @@ impl AesEmp {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_backend(&self, blk: Block) -> Block {
-        let mut ctxt = _mm_xor_si128(blk.0, self.0[i].0);
+        let mut ctxt = _mm_xor_si128(blk.0, self.0[0].0);
         for i in 1..10 {
             ctxt = _mm_aesenc_si128(ctxt, self.0[i].0);
         }
