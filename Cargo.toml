@@ -8,3 +8,6 @@ members = [
 opt-level = 3
 debug = true
 lto = true
+debug-assertions = false
+overflow-checks = false
+codegen-units = 1
