@@ -18,7 +18,6 @@ use core::arch::x86_64::*;
 
 #[cfg(target_arch = "aarch64")]
 use crate::sse2neon::AES_SBOX;
-use crate::Block;
 
 #[cfg(target_arch = "aarch64")]
 use crate::{
@@ -29,6 +28,7 @@ use crate::{
 #[cfg(target_arch = "aarch64")]
 use std::mem;
 
+use crate::Block;
 ///The AES 128 struct
 pub struct Aes(Aes128Enc);
 
