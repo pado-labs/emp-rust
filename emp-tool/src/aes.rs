@@ -219,17 +219,17 @@ impl AesEmp {
     unsafe fn encrypt_many_backend<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
         let mut ctxt = blks.map(|x| x.0);
         for i in 0..N {
-            ctxt[i] = _mm_xor_si128(ctxt[i], self.rd_key[0].0);
+            ctxt[i] = _mm_xor_si128(ctxt[i], self.0[0].0);
         }
 
         for j in 1..10 {
             for i in 0..N {
-                ctxt[i] = _mm_aesenc_si128(ctxt[i], self.rd_key[j].0);
+                ctxt[i] = _mm_aesenc_si128(ctxt[i], self.0[j].0);
             }
         }
 
         for i in 0..N {
-            ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.rd_key[10].0);
+            ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.0[10].0);
         }
 
         ctxt.map(|x| Block(x))
