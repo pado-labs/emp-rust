@@ -18,6 +18,8 @@ use core::arch::x86_64::*;
 use generic_array::{typenum::U16, GenericArray};
 
 use crate::ZERO_BLOCK;
+
+#[cfg(target_arch = "aarch64")]
 use crate::shuffle_epi32;
 
 // #[macro_use]
