@@ -228,7 +228,7 @@ impl Aes {
 }
 
 #[test]
-fn aes_new_test() {
+fn aes_test() {
     let aes = Aes::new(Block::default());
     let c = aes.encrypt_block(Block::default());
     let res = Block::from(0x2e2b34ca59fa4c883b2c8aefd44be966);
