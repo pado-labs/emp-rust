@@ -62,6 +62,14 @@ fn criterion_benchmark(c: &mut Criterion) {
             black_box(aes.encrypt_block(blk));
         });
     });
+    c.bench_function("aes-emp::encrypt_block", move |bench| {
+        let key = rand::random::<Block>();
+        let blks = rand::random::<[Block;8]>();
+        let aes = AesEmp::new(key);
+        bench.iter(|| {
+            black_box(aes.encrypt_many_blocks::<8>(&blks));
+        });
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);
