@@ -30,10 +30,10 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("aes::encrypt_blocks::<8>", move |bench| {
         let key = rand::random::<Block>();
         let aes = Aes::new(key);
-        let blks = rand::random::<[Block; 16]>();
+        let blks = rand::random::<[Block; 8]>();
 
         bench.iter(|| {
-            black_box(aes.encrypt_blocks::<16>(blks));
+            black_box(aes.encrypt_blocks::<8>(blks));
         });
     });
 
@@ -42,7 +42,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let aes = Aes128Enc::new_from_slice(&key).unwrap();
         let blks = rand::random::<[u8; 16]>();
         let blks = GenericArray::from(blks);
-        let mut blks = [blks; 16];
+        let mut blks = [blks; 8];
         bench.iter(|| {
             black_box(aes.encrypt_blocks(&mut blks));
         });

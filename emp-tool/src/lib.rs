@@ -1,4 +1,5 @@
 #![deny(missing_docs)]
+#![feature(stdsimd)]
 
 //! This crate defines and implements basic tools for MPC
 pub mod aes;

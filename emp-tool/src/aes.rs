@@ -1,6 +1,6 @@
 //! Implement aes128
 use aes::{
-    cipher::{generic_array::GenericArray, typenum::U16, BlockEncrypt, KeyInit},
+    cipher::{generic_array::GenericArray, BlockEncrypt, KeyInit},
     Aes128Enc,
 };
 
@@ -199,12 +199,13 @@ impl AesEmp {
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_backend(&self, blk: Block) -> Block {
-        // let mut ctxt = blk.0;
-        // for i in 0..self.rounds {
-        //     ctxt = vaesmcq_u8(vaeseq_u8(ctxt, self.rd_key[i].0));
-        // }
+        let mut ctxt = blk.0;
+        for i in 0..9 {
+            ctxt = vaesmcq_u8(vaeseq_u8(ctxt, self.0[i].0));
+        }
 
-        Block::default()
+        ctxt = veorq_u8(vaeseq_u8(ctxt, self.0[9].0), self.0[10].0);
+        Block(ctxt)
     }
 
     /// Encrypt many blocks
@@ -239,7 +240,16 @@ impl AesEmp {
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_many_backend<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
-        let mut ctxt = [vdupq_n_u8(0); N];
+        let mut ctxt = blks.map(|x| x.0);
+        for j in 0..9 {
+            for i in 0..N {
+                ctxt[i] = vaesmcq_u8(vaeseq_u8(ctxt[i], self.0[j].0));
+            }
+        }
+
+        for i in 0..N {
+            ctxt[i] = veorq_u8(vaeseq_u8(ctxt[i], self.0[9].0), self.0[10].0);
+        }
         ctxt.map(|x| Block(x))
     }
 }
@@ -252,9 +262,9 @@ fn aes_new_test() {
 
     let blks = [Block::default(); 8];
     let d = aes.encrypt_many_blocks::<8>(blks);
-    
+
     println!("encrypt many:");
-    for i in 0..8{
-        println!("{}",d[i]);
+    for i in 0..8 {
+        println!("{}", d[i]);
     }
 }
