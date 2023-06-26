@@ -13,7 +13,13 @@ use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
+use crate::sse2neon::AES_SBOX;
 use crate::Block;
+use crate::{
+    aeskeygenassist_si128, castps_si128, castsi128_ps, cvtsi128_si32, shuffle_epi32, shuffle_ps,
+    xor_si128,
+};
+use std::mem;
 
 ///The AES 128 struct
 pub struct Aes(Aes128Enc);
@@ -54,6 +60,7 @@ pub struct AesEmp {
     rounds: usize,
 }
 
+#[allow(unused_macros)]
 macro_rules! expand_assist_x86 {
     ($v1:ident,$v2:ident,$v3:ident,$v4:ident,$sc:expr,$ac:expr) => {
         $v2 = _mm_aeskeygenassist_si128($v4, $ac);
@@ -74,12 +81,17 @@ macro_rules! expand_assist_x86 {
     };
 }
 
-// macro_rules! expand_assist_arm {
-//     ($v1:ident,$v2:ident,$v3:ident,$sc:expr,$ac:expr) => {
-//         $v2 = aeskeygenassist_si128!($v4, $ac);
-//         $v3 =
-//     };
-// }
+macro_rules! expand_assist_arm {
+    ($v1:expr,$v2:expr,$v3:expr,$v4:expr, $sc:expr,$ac:expr) => {
+        $v2 = aeskeygenassist_si128!($v4, $ac);
+        $v3 = castps_si128!(shuffle_ps!(castsi128_ps!($v3), castsi128_ps!($v1), 16));
+        $v1 = xor_si128!($v1, $v3);
+        $v3 = castps_si128!(shuffle_ps!(castsi128_ps!($v3), castsi128_ps!($v1), 140));
+        $v1 = xor_si128!($v1, $v3);
+        $v2 = shuffle_epi32!($v2, $sc);
+        $v1 = xor_si128!($v1, $v2);
+    };
+}
 
 impl AesEmp {
     /// New AES
@@ -94,37 +106,37 @@ impl AesEmp {
         let mut kp = [Block::default(); 11];
         kp[0] = key;
         let mut x0 = key.0;
-        let mut x1 = _mm_setzero_si128();
+        let mut _x1 = _mm_setzero_si128();
         let mut x2 = _mm_setzero_si128();
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 1);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 1);
         kp[1] = Block(x0);
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 2);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 2);
         kp[2] = Block(x0);
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 4);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 4);
         kp[3] = Block(x0);
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 8);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 8);
         kp[4] = Block(x0);
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 16);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 16);
         kp[5] = Block(x0);
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 32);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 32);
         kp[6] = Block(x0);
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 64);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 64);
         kp[7] = Block(x0);
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 128);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 128);
         kp[8] = Block(x0);
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 27);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 27);
         kp[9] = Block(x0);
 
-        expand_assist_x86!(x0, x1, x2, x0, 255, 54);
+        expand_assist_x86!(x0, _x1, x2, x0, 255, 54);
         kp[10] = Block(x0);
         Self {
             rd_key: kp,
@@ -136,17 +148,52 @@ impl AesEmp {
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "aes")]
     unsafe fn aes_init(key: Block) -> Self {
+        let mut kp = [Block::default(); 11];
+        kp[0] = key;
+        let mut x0 = key.0;
+        let mut _x1 = vdupq_n_u8(0);
+        let mut x2 = vdupq_n_u8(0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 1);
+        kp[1] = Block(x0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 2);
+        kp[2] = Block(x0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 4);
+        kp[3] = Block(x0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 8);
+        kp[4] = Block(x0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 16);
+        kp[5] = Block(x0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 32);
+        kp[6] = Block(x0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 64);
+        kp[7] = Block(x0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 128);
+        kp[8] = Block(x0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 27);
+        kp[9] = Block(x0);
+
+        expand_assist_arm!(x0, _x1, x2, x0, 255, 54);
+        kp[10] = Block(x0);
         Self {
-            rd_key: [Block::default(); 11],
+            rd_key: kp,
             rounds: 10,
         }
     }
 }
 
 #[test]
-fn aes_new_test(){
+fn aes_new_test() {
     let aes = AesEmp::new(Block::default());
-    for i in 0..11{
+    for i in 0..11 {
         println!("{}", aes.rd_key[i]);
     }
 }

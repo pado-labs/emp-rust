@@ -1,6 +1,7 @@
 //! Define sse to neon instructions.
 
-const AES_SBOX: [u8; 256] = [
+/// AES Sbox
+pub const AES_SBOX: [u8; 256] = [
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
     0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
     0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
@@ -19,35 +20,47 @@ const AES_SBOX: [u8; 256] = [
     0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16,
 ];
 
-/// implement __mm_shuffle_epi32 with neon.
+/// implement _mm_shuffle_epi32 with neon.
 #[macro_export]
 macro_rules! shuffle_epi32 {
-    ($a:ident,$IMM8:expr) => {{
-        let tmp = vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_u8($a), $IMM8 & (0x3)));
-        let tmp = vsetq_lane_u32(
+    ($a:expr,$IMM8:expr) => {{
+        let ret = vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_u8($a), $IMM8 & (0x3)));
+        let ret = vsetq_lane_u32(
             vgetq_lane_u32(vreinterpretq_u32_u8($a), ($IMM8 >> 2) & (0x3)),
-            tmp,
+            ret,
             1,
         );
 
-        let tmp = vsetq_lane_u32(
+        let ret = vsetq_lane_u32(
             vgetq_lane_u32(vreinterpretq_u32_u8($a), ($IMM8 >> 4) & (0x3)),
-            tmp,
+            ret,
             2,
         );
-        let tmp = vreinterpretq_u8_u32(vsetq_lane_u32(
+        let ret = vreinterpretq_u8_u32(vsetq_lane_u32(
             vgetq_lane_u32(vreinterpretq_u32_u8($a), ($IMM8 >> 6) & (0x3)),
-            tmp,
+            ret,
             3,
         ));
-        tmp
+        ret
+    }};
+}
+
+/// implement _mm_shuffle_ps with neon.
+#[macro_export]
+macro_rules! shuffle_ps {
+    ($a:expr,$b:expr,$imm:expr) => {{
+        let ret = vmovq_n_f32(vgetq_lane_f32($a, ($imm) & (0x3)));
+        let ret = vsetq_lane_f32(vgetq_lane_f32($a, ($imm >> 2) & (0x3)), ret, 1);
+        let ret = vsetq_lane_f32(vgetq_lane_f32($b, ($imm >> 4) & (0x3)), ret, 2);
+        let ret = vsetq_lane_f32(vgetq_lane_f32($b, ($imm >> 6) & (0x3)), ret, 3);
+        ret
     }};
 }
 
 /// implement _mm_cvtsi128_si32 with neon.
 #[macro_export]
 macro_rules! cvtsi128_si32 {
-    ($a:ident) => {{
+    ($a:expr) => {{
         vgetq_lane_s32(vreinterpretq_s32_u8($a), 0)
     }};
 }
@@ -55,7 +68,7 @@ macro_rules! cvtsi128_si32 {
 /// implement _mm_aeskeygenassist_si128 with neon.
 #[macro_export]
 macro_rules! aeskeygenassist_si128 {
-    ($key:ident,$rcon:expr) => {{
+    ($key:expr,$rcon:expr) => {{
         let x1 = cvtsi128_si32!(shuffle_epi32!($key, 0x55));
         let x3 = cvtsi128_si32!(shuffle_epi32!($key, 0xFF));
 
@@ -63,18 +76,18 @@ macro_rules! aeskeygenassist_si128 {
         let mut x3: [u8; 4] = mem::transmute(x3);
 
         for i in 0..4 {
-            x1[i] = AES_SBOX[x1[i]];
-            x3[i] = AES_SBOX[x3[i]];
+            x1[i] = AES_SBOX[x1[i] as usize];
+            x3[i] = AES_SBOX[x3[i] as usize];
         }
         let x1: u32 = mem::transmute(x1);
         let x3: u32 = mem::transmute(x3);
 
-        vreinterpretq_u8_s32(vld1q_u32(
+        vreinterpretq_u8_u32(vld1q_u32(
             [
-                ((x3 >> 8) | (x3 << 24)) ^ rcon,
-                x3,
-                ((x1 >> 8) | (x1 << 24)) ^ rcon,
                 x1,
+                ((x1 >> 8) | (x1 << 24)) ^ $rcon,
+                x3,
+                ((x3 >> 8) | (x3 << 24)) ^ $rcon,
             ]
             .as_ptr(),
         ))
@@ -84,7 +97,23 @@ macro_rules! aeskeygenassist_si128 {
 /// implement _mm_castsi128_ps with neon.
 #[macro_export]
 macro_rules! castsi128_ps {
-    ($a:ident) => {{
-        vreinterpretq_s32_u8($a)
+    ($a:expr) => {{
+        vreinterpretq_f32_u8($a)
+    }};
+}
+
+/// implement _mm_castps_si128 with neon.
+#[macro_export]
+macro_rules! castps_si128 {
+    ($a:expr) => {{
+        vreinterpretq_u8_f32($a)
+    }};
+}
+
+/// implement _mm_xor_si128 with neon.
+#[macro_export]
+macro_rules! xor_si128 {
+    ($a:expr,$b:expr) => {{
+        veorq_u8($a, $b)
     }};
 }
