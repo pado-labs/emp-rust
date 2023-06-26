@@ -50,9 +50,7 @@ impl Aes {
 }
 
 ///AES related to EMP
-pub struct AesEmp {
-    rd_key: [Block; 11],
-}
+pub struct AesEmp([Block; 11]);
 
 #[allow(unused_macros)]
 macro_rules! expand_assist_x86 {
@@ -133,9 +131,7 @@ impl AesEmp {
 
         expand_assist_x86!(x0, _x1, x2, x0, 255, 54);
         kp[10] = Block(x0);
-        Self {
-            rd_key: kp,
-        }
+        Self(kp)
     }
 
     #[inline]
@@ -177,9 +173,7 @@ impl AesEmp {
 
         expand_assist_arm!(x0, _x1, x2, x0, 255, 54);
         kp[10] = Block(x0);
-        Self {
-            rd_key: kp,
-        }
+        Self(kp)
     }
 
     /// Encrypt one block.
@@ -192,12 +186,12 @@ impl AesEmp {
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_backend(&self, blk: Block) -> Block {
-        let mut ctxt = _mm_xor_si128(blk.0, self.rd_key[0].0);
+        let mut ctxt = _mm_xor_si128(blk.0, self.0[i].0);
         for i in 1..10 {
-            ctxt = _mm_aesenc_si128(ctxt, self.rd_key[i].0);
+            ctxt = _mm_aesenc_si128(ctxt, self.0[i].0);
         }
 
-        ctxt = _mm_aesenclast_si128(ctxt, self.rd_key[10].0);
+        ctxt = _mm_aesenclast_si128(ctxt, self.0[10].0);
         Block(ctxt)
     }
 
@@ -215,15 +209,15 @@ impl AesEmp {
 
     /// Encrypt many blocks
     #[inline(always)]
-    pub fn encrypt_many_blocks<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
+    pub fn encrypt_many_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
         unsafe { self.encrypt_many_backend::<N>(blks) }
     }
 
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     #[target_feature(enable = "aes")]
-    unsafe fn encrypt_many_backend<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
-        let mut ctxt = [_mm_setzero_si128(); N];
+    unsafe fn encrypt_many_backend<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
+        let mut ctxt = blks.map(|x| x.0);
         for i in 0..N {
             ctxt[i] = _mm_xor_si128(ctxt[i], self.rd_key[0].0);
         }
@@ -244,7 +238,7 @@ impl AesEmp {
     #[inline]
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "aes")]
-    unsafe fn encrypt_many_backend<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
+    unsafe fn encrypt_many_backend<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
         let mut ctxt = [vdupq_n_u8(0); N];
         ctxt.map(|x| Block(x))
     }
@@ -255,4 +249,12 @@ fn aes_new_test() {
     let aes = AesEmp::new(Block::default());
     let c = aes.encrypt_block(Block::default());
     println!("{}", c);
+
+    let blks = [Block::default(); 8];
+    let d = aes.encrypt_many_blocks::<8>(blks);
+    
+    println!("encrypt many:");
+    for i in 0..8{
+        println!("{}",d[i]);
+    }
 }
