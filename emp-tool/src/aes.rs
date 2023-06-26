@@ -213,7 +213,56 @@ impl AesEmp {
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_backend(&self, blk: Block) -> Block {
+        // let mut ctxt = blk.0;
+        // for i in 0..self.rounds {
+        //     ctxt = vaesmcq_u8(vaeseq_u8(ctxt, self.rd_key[i].0));
+        // }
+
         Block::default()
+    }
+
+    /// Encrypt many blocks
+    #[inline(always)]
+    pub fn encrypt_many_blocks<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
+        unsafe { self.encrypt_many_backend::<N>(blks) }
+    }
+
+    #[inline]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[target_feature(enable = "aes")]
+    unsafe fn encrypt_many_backend<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
+        let mut ctxt = [_mm_setzero_si128(); N];
+        for i in 0..N {
+            ctxt[i] = _mm_xor_si128(ctxt[i], self.rd_key[0].0);
+        }
+
+        for j in 1..self.rounds {
+            for i in 0..N {
+                ctxt[i] = _mm_aesenc_si128(ctxt[i], self.rd_key[j].0);
+            }
+        }
+
+        for i in 0..N {
+            ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.rd_key[self.rounds].0);
+        }
+
+        ctxt.iter()
+            .map(|&x| Block(x))
+            .collect::<Vec<Block>>()
+            .try_into()
+            .unwrap()
+    }
+
+    #[inline]
+    #[cfg(target_arch = "aarch64")]
+    #[target_feature(enable = "aes")]
+    unsafe fn encrypt_many_backend<const N: usize>(&self, blks: &[Block; N]) -> [Block; N] {
+        let mut ctxt = [vdupq_n_u8(0); N];
+        ctxt.iter()
+            .map(|&x| Block(x))
+            .collect::<Vec<Block>>()
+            .try_into()
+            .unwrap()
     }
 }
 
