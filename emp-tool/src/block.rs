@@ -170,7 +170,7 @@ impl Block {
 
         let tmp7 = veorq_u8(tmp7, tmp8);
         let tmp7 = veorq_u8(tmp7, tmp9);
-        let tmp8 = shuffle_epi32!(tmp7,147);
+        let tmp8 = shuffle_epi32!(tmp7, 147);
 
         let tmp7 = vandq_u8(xmmmask, tmp8);
         let tmp8 = vbicq_u8(tmp8, xmmmask);
@@ -270,7 +270,6 @@ impl Block {
         }
         res * res
     }
-
 }
 
 impl Default for Block {

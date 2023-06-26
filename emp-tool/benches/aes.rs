@@ -1,9 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use emp_tool::{
-    aes::Aes,
-    block::Block,
-};
+use emp_tool::{aes::Aes, block::Block};
 
 fn criterion_benchmark(c: &mut Criterion) {
     let x = rand::random::<Block>();
