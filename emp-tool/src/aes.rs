@@ -95,6 +95,7 @@ macro_rules! expand_assist_arm {
 
 impl AesEmp {
     /// New AES
+    #[inline(always)]
     pub fn new(key: Block) -> Self {
         unsafe { AesEmp::aes_init(key) }
     }
@@ -188,12 +189,37 @@ impl AesEmp {
             rounds: 10,
         }
     }
+
+    /// Encrypt one block.
+    #[inline(always)]
+    pub fn encrypt_block(&self, blk: Block) -> Block {
+        unsafe { self.encrypt_backend(blk) }
+    }
+
+    #[inline]
+    #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+    #[target_feature(enable = "aes")]
+    unsafe fn encrypt_backend(&self, blk: Block) -> Block {
+        let mut ctxt = _mm_xor_si128(blk.0, self.rd_key[0].0);
+        for i in 1..self.rounds {
+            ctxt = _mm_aesenc_si128(ctxt, self.rd_key[i].0);
+        }
+
+        ctxt = _mm_aesenclast_si128(ctxt, self.rd_key[self.rounds].0);
+        Block(ctxt)
+    }
+
+    #[inline]
+    #[cfg(target_arch = "aarch64")]
+    #[target_feature(enable = "aes")]
+    unsafe fn encrypt_backend(&self, blk: Block) -> Block {
+        Block::default()
+    }
 }
 
 #[test]
 fn aes_new_test() {
     let aes = AesEmp::new(Block::default());
-    for i in 0..11 {
-        println!("{}", aes.rd_key[i]);
-    }
+    let c = aes.encrypt_block(Block::default());
+    println!("{}", c);
 }
