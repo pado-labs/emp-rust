@@ -33,6 +33,10 @@ jobs:
     
     - name: Build and test
       run: |
+        uname -a
+        uname -s
+        arch
+        rustup default aarch64-apple-darwin
         cargo fmt -- --check
         cargo build --verbose
         cargo test --verbose
