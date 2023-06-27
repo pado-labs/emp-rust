@@ -18,12 +18,13 @@ jobs:
       matrix:
           os: [ubuntu-latest, macos-latest]
           rust-toolchain: [stable]
-          arch: [x86_64, armv7]
+          arch: [x86_64, aarch64]
 
     steps:
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
       with:
+       target: aarch64-apple-darwin
        toolchain: ${{matrix.rust-toolchain}}
        components: rustfmt
       
