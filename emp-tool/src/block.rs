@@ -15,7 +15,15 @@ use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
+use generic_array::{typenum::U16, GenericArray};
+
 use crate::ZERO_BLOCK;
+
+#[cfg(target_arch = "aarch64")]
+use crate::_mm_shuffle_epi32;
+
+// #[macro_use]
+// use crate::sse2neon::shuffle_epi32;
 
 /// A 128-bit chunk type.\
 /// It is also viewed as an element in `GF(2^128)` with polynomial `x^128 + x^7 + x^2 + x + 1`\
@@ -162,23 +170,7 @@ impl Block {
 
         let tmp7 = veorq_u8(tmp7, tmp8);
         let tmp7 = veorq_u8(tmp7, tmp9);
-
-        let tmp8 = vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), 147 & (0x3)));
-        let tmp8 = vsetq_lane_u32(
-            vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), (147 >> 2) & (0x3)),
-            tmp8,
-            1,
-        );
-        let tmp8 = vsetq_lane_u32(
-            vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), (147 >> 4) & (0x3)),
-            tmp8,
-            2,
-        );
-        let tmp8 = vreinterpretq_u8_u32(vsetq_lane_u32(
-            vgetq_lane_u32(vreinterpretq_u32_u8(tmp7), (147 >> 6) & (0x3)),
-            tmp8,
-            3,
-        ));
+        let tmp8 = _mm_shuffle_epi32!(tmp7, 147);
 
         let tmp7 = vandq_u8(xmmmask, tmp8);
         let tmp8 = vbicq_u8(tmp8, xmmmask);
@@ -304,6 +296,20 @@ impl From<Block> for u128 {
 impl From<u128> for Block {
     #[inline(always)]
     fn from(m: u128) -> Block {
+        unsafe { mem::transmute(m) }
+    }
+}
+
+impl From<Block> for GenericArray<u8, U16> {
+    #[inline(always)]
+    fn from(m: Block) -> Self {
+        unsafe { mem::transmute(m) }
+    }
+}
+
+impl From<GenericArray<u8, U16>> for Block {
+    #[inline(always)]
+    fn from(m: GenericArray<u8, U16>) -> Self {
         unsafe { mem::transmute(m) }
     }
 }

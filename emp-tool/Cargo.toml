@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 rand = {version = "0.8"}
 structopt = {version = "0.3.20"}
+generic-array = {version = "0.14.7"}
 
 [dev-dependencies]
 rand = {version = "0.8"}
@@ -16,6 +17,10 @@ criterion = {version = "0.5.1"}
 
 [[bench]]
 name = "block"
+harness = false
+
+[[bench]]
+name = "aes"
 harness = false
 
 [[example]]
