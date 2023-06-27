@@ -13,8 +13,8 @@ use crate::sse2neon::AES_SBOX;
 
 #[cfg(target_arch = "aarch64")]
 use crate::{
-    aeskeygenassist_si128, castps_si128, castsi128_ps, cvtsi128_si32, shuffle_epi32, shuffle_ps,
-    xor_si128,
+    _mm_aeskeygenassist_si128, _mm_castps_si128, _mm_castsi128_ps, _mm_cvtsi128_si32,
+    _mm_shuffle_epi32, _mm_shuffle_ps, _mm_xor_si128,
 };
 
 #[cfg(target_arch = "aarch64")]
@@ -48,13 +48,21 @@ macro_rules! expand_assist_x86 {
 #[allow(unused_macros)]
 macro_rules! expand_assist_arm {
     ($v1:expr,$v2:expr,$v3:expr,$v4:expr, $sc:expr,$ac:expr) => {
-        $v2 = aeskeygenassist_si128!($v4, $ac);
-        $v3 = castps_si128!(shuffle_ps!(castsi128_ps!($v3), castsi128_ps!($v1), 16));
-        $v1 = xor_si128!($v1, $v3);
-        $v3 = castps_si128!(shuffle_ps!(castsi128_ps!($v3), castsi128_ps!($v1), 140));
-        $v1 = xor_si128!($v1, $v3);
-        $v2 = shuffle_epi32!($v2, $sc);
-        $v1 = xor_si128!($v1, $v2);
+        $v2 = _mm_aeskeygenassist_si128!($v4, $ac);
+        $v3 = _mm_castps_si128!(_mm_shuffle_ps!(
+            _mm_castsi128_ps!($v3),
+            _mm_castsi128_ps!($v1),
+            16
+        ));
+        $v1 = _mm_xor_si128!($v1, $v3);
+        $v3 = _mm_castps_si128!(_mm_shuffle_ps!(
+            _mm_castsi128_ps!($v3),
+            _mm_castsi128_ps!($v1),
+            140
+        ));
+        $v1 = _mm_xor_si128!($v1, $v3);
+        $v2 = _mm_shuffle_epi32!($v2, $sc);
+        $v1 = _mm_xor_si128!($v1, $v2);
     };
 }
 

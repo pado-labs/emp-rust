@@ -22,7 +22,7 @@ pub const AES_SBOX: [u8; 256] = [
 
 /// implement _mm_shuffle_epi32 with neon.
 #[macro_export]
-macro_rules! shuffle_epi32 {
+macro_rules! _mm_shuffle_epi32 {
     ($a:expr,$IMM8:expr) => {{
         let ret = vmovq_n_u32(vgetq_lane_u32(vreinterpretq_u32_u8($a), $IMM8 & (0x3)));
         let ret = vsetq_lane_u32(
@@ -47,7 +47,7 @@ macro_rules! shuffle_epi32 {
 
 /// implement _mm_shuffle_ps with neon.
 #[macro_export]
-macro_rules! shuffle_ps {
+macro_rules! _mm_shuffle_ps {
     ($a:expr,$b:expr,$imm:expr) => {{
         let ret = vmovq_n_f32(vgetq_lane_f32($a, ($imm) & (0x3)));
         let ret = vsetq_lane_f32(vgetq_lane_f32($a, ($imm >> 2) & (0x3)), ret, 1);
@@ -59,7 +59,7 @@ macro_rules! shuffle_ps {
 
 /// implement _mm_cvtsi128_si32 with neon.
 #[macro_export]
-macro_rules! cvtsi128_si32 {
+macro_rules! _mm_cvtsi128_si32 {
     ($a:expr) => {{
         vgetq_lane_s32(vreinterpretq_s32_u8($a), 0)
     }};
@@ -67,10 +67,10 @@ macro_rules! cvtsi128_si32 {
 
 /// implement _mm_aeskeygenassist_si128 with neon.
 #[macro_export]
-macro_rules! aeskeygenassist_si128 {
+macro_rules! _mm_aeskeygenassist_si128 {
     ($key:expr,$rcon:expr) => {{
-        let x1 = cvtsi128_si32!(shuffle_epi32!($key, 0x55));
-        let x3 = cvtsi128_si32!(shuffle_epi32!($key, 0xFF));
+        let x1 = _mm_cvtsi128_si32!(_mm_shuffle_epi32!($key, 0x55));
+        let x3 = _mm_cvtsi128_si32!(_mm_shuffle_epi32!($key, 0xFF));
 
         let mut x1: [u8; 4] = mem::transmute(x1);
         let mut x3: [u8; 4] = mem::transmute(x3);
@@ -96,7 +96,7 @@ macro_rules! aeskeygenassist_si128 {
 
 /// implement _mm_castsi128_ps with neon.
 #[macro_export]
-macro_rules! castsi128_ps {
+macro_rules! _mm_castsi128_ps {
     ($a:expr) => {{
         vreinterpretq_f32_u8($a)
     }};
@@ -104,7 +104,7 @@ macro_rules! castsi128_ps {
 
 /// implement _mm_castps_si128 with neon.
 #[macro_export]
-macro_rules! castps_si128 {
+macro_rules! _mm_castps_si128 {
     ($a:expr) => {{
         vreinterpretq_u8_f32($a)
     }};
@@ -112,7 +112,7 @@ macro_rules! castps_si128 {
 
 /// implement _mm_xor_si128 with neon.
 #[macro_export]
-macro_rules! xor_si128 {
+macro_rules! _mm_xor_si128 {
     ($a:expr,$b:expr) => {{
         veorq_u8($a, $b)
     }};

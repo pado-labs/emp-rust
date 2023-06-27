@@ -20,7 +20,7 @@ use generic_array::{typenum::U16, GenericArray};
 use crate::ZERO_BLOCK;
 
 #[cfg(target_arch = "aarch64")]
-use crate::shuffle_epi32;
+use crate::_mm_shuffle_epi32;
 
 // #[macro_use]
 // use crate::sse2neon::shuffle_epi32;
@@ -170,7 +170,7 @@ impl Block {
 
         let tmp7 = veorq_u8(tmp7, tmp8);
         let tmp7 = veorq_u8(tmp7, tmp9);
-        let tmp8 = shuffle_epi32!(tmp7, 147);
+        let tmp8 = _mm_shuffle_epi32!(tmp7, 147);
 
         let tmp7 = vandq_u8(xmmmask, tmp8);
         let tmp8 = vbicq_u8(tmp8, xmmmask);
