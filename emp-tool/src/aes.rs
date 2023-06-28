@@ -192,13 +192,13 @@ impl Aes {
     /// Encrypt many blocks
     #[inline(always)]
     pub fn encrypt_many_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
-        unsafe { self.encrypt_many_backend::<N>(blks) }
+        unsafe { self.unsafe_encrypt_many_blocks::<N>(blks) }
     }
 
     #[inline]
     #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
     #[target_feature(enable = "aes")]
-    unsafe fn encrypt_many_backend<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
+    unsafe fn unsafe_encrypt_many_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
         let mut ctxt = blks.map(|x| x.0);
         for i in 0..N {
             ctxt[i] = _mm_xor_si128(ctxt[i], self.0[0].0);
@@ -220,7 +220,7 @@ impl Aes {
     #[inline]
     #[cfg(target_arch = "aarch64")]
     #[target_feature(enable = "aes")]
-    unsafe fn encrypt_many_backend<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
+    unsafe fn unsafe_encrypt_many_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
         let mut ctxt = blks.map(|x| x.0);
         for j in 0..9 {
             for i in 0..N {
@@ -233,6 +233,23 @@ impl Aes {
         }
         ctxt.map(|x| Block(x))
     }
+
+    /// Encrypt block vector
+    #[inline(always)]
+    pub fn encrypt_vec_blocks(&self, blks: &[Block])->Vec<Block> {
+        blks.iter().map(|x| self.encrypt_block(*x)).collect()
+        // let mut msg = [Block::default();8];
+        // let mut res = [Block::default();8];
+        // for i in 0..blks.len()/8{
+        //     msg.copy_from_slice(&blks[i*8..i*8+7]);
+        //     res = self.encrypt_many_blocks::<8>(msg);
+        //     res.concat()
+        // }
+
+
+        // let blks = blks.try_into().unwrap();
+        // self.encrypt_many_blocks::<8>(blks).to_vec()
+    }
 }
 
 #[test]
@@ -242,6 +259,8 @@ fn aes_test() {
     let res = Block::from(0x2e2b34ca59fa4c883b2c8aefd44be966);
     assert_eq!(c, res);
     let blks = [Block::default(); 8];
-    let d = aes.encrypt_many_blocks::<8>(blks);
+    let d = aes.encrypt_many_blocks(blks);
     assert_eq!(d, [res; 8]);
+    let e = aes.encrypt_vec_blocks(&blks);
+    assert_eq!(e, [res; 8].to_vec());
 }
