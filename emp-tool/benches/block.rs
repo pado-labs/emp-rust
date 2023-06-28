@@ -105,6 +105,12 @@ fn criterion_benchmark(c: &mut Criterion) {
             black_box(a.inverse());
         });
     });
+
+    c.bench_function("Block::sigma", move |bench| {
+        bench.iter(|| {
+            black_box(Block::sigma(a));
+        });
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

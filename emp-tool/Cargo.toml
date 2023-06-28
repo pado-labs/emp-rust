@@ -23,6 +23,10 @@ harness = false
 name = "aes"
 harness = false
 
+[[bench]]
+name = "hash"
+harness = false
+
 [[example]]
 name = "netio"
 path = "examples/netio.rs"

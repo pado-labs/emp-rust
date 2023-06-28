@@ -1,8 +1,6 @@
 #![deny(missing_docs)]
 
 //! This crate defines and implements basic tools for MPC
-// #![cfg(target_arch = "aarch64")]
-// #![feature(stdsimd)]
 #![cfg_attr(target_arch = "aarch64", feature(stdsimd))]
 pub mod aes;
 
@@ -11,6 +9,7 @@ pub mod constants;
 pub mod io_channel;
 pub mod sse2neon;
 pub mod utils;
+pub mod hash;
 
 pub use block::Block;
 pub use constants::{ALICE, BOB, NETWORK_BUFFER_SIZE, ONES_BLOCK, SELECT_MASK, ZERO_BLOCK};

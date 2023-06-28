@@ -117,3 +117,11 @@ macro_rules! _mm_xor_si128 {
         veorq_u8($a, $b)
     }};
 }
+
+/// implement _mm_and_si128 with neon.
+#[macro_export]
+macro_rules! _mm_and_si128 {
+    ($a:expr,$b:expr) => {{
+        vandq_u8($a, $b)
+    }};
+}

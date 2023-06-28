@@ -236,19 +236,8 @@ impl Aes {
 
     /// Encrypt block vector
     #[inline(always)]
-    pub fn encrypt_vec_blocks(&self, blks: &[Block])->Vec<Block> {
+    pub fn encrypt_vec_blocks(&self, blks: &[Block]) -> Vec<Block> {
         blks.iter().map(|x| self.encrypt_block(*x)).collect()
-        // let mut msg = [Block::default();8];
-        // let mut res = [Block::default();8];
-        // for i in 0..blks.len()/8{
-        //     msg.copy_from_slice(&blks[i*8..i*8+7]);
-        //     res = self.encrypt_many_blocks::<8>(msg);
-        //     res.concat()
-        // }
-
-
-        // let blks = blks.try_into().unwrap();
-        // self.encrypt_many_blocks::<8>(blks).to_vec()
     }
 }
 
