@@ -40,8 +40,8 @@ impl CrHash {
 /// Circular correlation-robust hash function
 /// (cf.<https://eprint.iacr.org/2019/074>, §7.3).
 ///
-/// The function computes `H(σ(x))`, where `H` is a correlation-robust hash
-/// function and `σ(x₀ || x₁) = (x₀ ⊕ x₁) || x₁`.
+/// The function computes `H(sigma(x))`, where `H` is a correlation-robust hash
+/// function and `sigma( x0 || x1 ) = (x0 xor x1) || x1`.
 pub struct CcrHash(Aes);
 impl CcrHash {
     /// New a function with zero key.
@@ -99,15 +99,15 @@ impl TccrHash {
     #[inline(always)]
     pub fn hash_block(&self, blk: Block, id: u64) -> Block {
         let y = self.0.encrypt_block(blk);
-        let idb = Block::from([0u64, id]);
+        let idb = Block::from([id, 0u64]);
         self.0.encrypt_block(y ^ idb) ^ y
     }
 
     /// Hash many blocks.
     #[inline(always)]
-    pub fn hash_many_blocks<const N: usize>(&self, blks: [Block; N], ids: [u64;N]) -> [Block; N] {
+    pub fn hash_many_blocks<const N: usize>(&self, blks: [Block; N], ids: [u64; N]) -> [Block; N] {
         let y = self.0.encrypt_many_blocks::<N>(blks);
-        let mut idsb = ids.map(|x|Block::from([0u64,x]));
+        let mut idsb = ids.map(|x| Block::from([x, 0u64]));
         for i in 0..N {
             idsb[i] ^= y[i];
         }
@@ -117,4 +117,20 @@ impl TccrHash {
         }
         res
     }
+}
+
+#[test]
+fn hash_test() {
+    use crate::ONES_BLOCK;
+    let h = CrHash::new();
+    // assert!()
+    println!("{}", h.hash_block(ONES_BLOCK));
+
+    let h = CcrHash::new();
+    println!("{}", h.hash_block(ONES_BLOCK));
+
+    let h = TccrHash::new();
+    println!("{}", h.hash_block(ONES_BLOCK, 1));
+
+    println!("sigma(ones): {}", Block::sigma(ONES_BLOCK));
 }

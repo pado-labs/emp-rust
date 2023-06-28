@@ -41,7 +41,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("hash::tccr_block::<8>", move |bench| {
+    c.bench_function("hash::tccr_blocks::<8>", move |bench| {
         let hash = TccrHash::new();
         bench.iter(|| {
             black_box(hash.hash_many_blocks::<8>([ZERO_BLOCK; 8], [1; 8]));

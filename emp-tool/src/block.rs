@@ -268,7 +268,7 @@ impl Block {
         res * res
     }
 
-    ///Function `σ(x₀ || x₁) = (x₀ ⊕ x₁) || x₁`.
+    ///Function ``sigma( x0 || x1 ) = (x0 xor x1) || x1``.
     #[inline(always)]
     pub fn sigma(a: Self) -> Self {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -276,7 +276,7 @@ impl Block {
             let x = a.0;
             Block(_mm_xor_si128(
                 _mm_shuffle_epi32(x, 78),
-                _mm_and_si128(x, mem::transmute([u64::MAX, 0u64])),
+                _mm_and_si128(x, mem::transmute([0u64, u64::MAX])),
             ))
         }
 
@@ -285,7 +285,7 @@ impl Block {
             let x = a.0;
             Block(_mm_xor_si128!(
                 _mm_shuffle_epi32!(x, 78),
-                _mm_and_si128!(x, mem::transmute([u64::MAX, 0u64]))
+                _mm_and_si128!(x, mem::transmute([064, u64::MAX]))
             ))
         }
     }
