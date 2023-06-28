@@ -123,14 +123,20 @@ impl TccrHash {
 fn hash_test() {
     use crate::ONES_BLOCK;
     let h = CrHash::new();
-    // assert!()
-    println!("{}", h.hash_block(ONES_BLOCK));
+    assert_eq!(
+        h.hash_block(ONES_BLOCK),
+        Block::from(0xb19972c12db88c05f5a57a153673a4c0)
+    );
 
     let h = CcrHash::new();
-    println!("{}", h.hash_block(ONES_BLOCK));
+    assert_eq!(
+        h.hash_block(ONES_BLOCK),
+        Block::from(0x9e10c525db2c0ea50a1fa067183cf807)
+    );
 
     let h = TccrHash::new();
-    println!("{}", h.hash_block(ONES_BLOCK, 1));
-
-    println!("sigma(ones): {}", Block::sigma(ONES_BLOCK));
+    assert_eq!(
+        h.hash_block(ONES_BLOCK, 1),
+        Block::from(0x68e0f8bae7d74f1581fc3d4b682d6260)
+    );
 }

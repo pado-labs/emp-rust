@@ -285,7 +285,7 @@ impl Block {
             let x = a.0;
             Block(_mm_xor_si128!(
                 _mm_shuffle_epi32!(x, 78),
-                _mm_and_si128!(x, mem::transmute([064, u64::MAX]))
+                _mm_and_si128!(x, mem::transmute([0u64, u64::MAX]))
             ))
         }
     }
