@@ -20,10 +20,7 @@ use generic_array::{typenum::U16, GenericArray};
 use crate::ZERO_BLOCK;
 
 #[cfg(target_arch = "aarch64")]
-use crate::_mm_shuffle_epi32;
-
-// #[macro_use]
-// use crate::sse2neon::shuffle_epi32;
+use crate::{_mm_and_si128, _mm_shuffle_epi32, _mm_xor_si128};
 
 /// A 128-bit chunk type.\
 /// It is also viewed as an element in `GF(2^128)` with polynomial `x^128 + x^7 + x^2 + x + 1`\
@@ -270,6 +267,28 @@ impl Block {
         }
         res * res
     }
+
+    ///Function ``sigma( x0 || x1 ) = (x0 xor x1) || x1``.
+    #[inline(always)]
+    pub fn sigma(a: Self) -> Self {
+        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
+        unsafe {
+            let x = a.0;
+            Block(_mm_xor_si128(
+                _mm_shuffle_epi32(x, 78),
+                _mm_and_si128(x, mem::transmute([0u64, u64::MAX])),
+            ))
+        }
+
+        #[cfg(target_arch = "aarch64")]
+        unsafe {
+            let x = a.0;
+            Block(_mm_xor_si128!(
+                _mm_shuffle_epi32!(x, 78),
+                _mm_and_si128!(x, mem::transmute([0u64, u64::MAX]))
+            ))
+        }
+    }
 }
 
 impl Default for Block {
@@ -286,6 +305,13 @@ impl From<Block> for [u8; 16] {
     }
 }
 
+impl From<Block> for [u64; 2] {
+    #[inline(always)]
+    fn from(m: Block) -> Self {
+        unsafe { mem::transmute(m) }
+    }
+}
+
 impl From<Block> for u128 {
     #[inline(always)]
     fn from(m: Block) -> u128 {
@@ -293,6 +319,12 @@ impl From<Block> for u128 {
     }
 }
 
+impl From<[u64; 2]> for Block {
+    #[inline(always)]
+    fn from(m: [u64; 2]) -> Self {
+        unsafe { mem::transmute(m) }
+    }
+}
 impl From<u128> for Block {
     #[inline(always)]
     fn from(m: u128) -> Block {

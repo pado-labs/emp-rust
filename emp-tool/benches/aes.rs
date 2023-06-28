@@ -28,6 +28,16 @@ fn criterion_benchmark(c: &mut Criterion) {
             black_box(aes.encrypt_many_blocks::<8>(blks));
         });
     });
+
+    c.bench_function("aes::encrypt_vec_blocks::<8>", move |bench| {
+        let key = rand::random::<Block>();
+        let aes = Aes::new(key);
+        let blks = rand::random::<[Block; 8]>();
+
+        bench.iter(|| {
+            black_box(aes.encrypt_vec_blocks(&blks));
+        });
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);
