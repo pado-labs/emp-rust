@@ -12,7 +12,7 @@ use std::mem;
 #[derive(Clone, Debug)]
 pub struct PrgCore {
     aes: Aes,
-    state: u128,
+    state: u64,
 }
 
 impl BlockRngCore for PrgCore {
@@ -27,7 +27,7 @@ impl BlockRngCore for PrgCore {
             |_| {
                 let x = self.state;
                 self.state += 1;
-                Block::from(x)
+                Block::from([x, 0])
             },
         );
         *results = unsafe { mem::transmute(self.aes.encrypt_many_blocks(states)) }
@@ -40,7 +40,7 @@ impl SeedableRng for PrgCore {
     #[inline(always)]
     fn from_seed(seed: Self::Seed) -> Self {
         let aes = Aes::new(seed);
-        Self { aes, state: 0u128 }
+        Self { aes, state: 0u64 }
     }
 }
 
