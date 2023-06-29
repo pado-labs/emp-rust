@@ -9,7 +9,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("aes::new", move |bench| {
         bench.iter(|| {
-            black_box(Aes::new(x));
+            let z = Aes::new(black_box(x));
+            black_box(black_box(z));
         });
     });
 
