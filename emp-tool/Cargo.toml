@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 rand = {version = "0.8"}
 structopt = {version = "0.3.20"}
-generic-array = {version = "0.14.7"}
+rand_core = {version = "0.6.4"}
 
 [dev-dependencies]
 rand = {version = "0.8"}
@@ -27,6 +27,14 @@ harness = false
 name = "hash"
 harness = false
 
+[[bench]]
+name = "prg"
+harness = false
+
 [[example]]
 name = "netio"
 path = "examples/netio.rs"
+
+[[example]]
+name = "prg"
+path = "examples/prg.rs"

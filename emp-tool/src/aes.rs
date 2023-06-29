@@ -22,6 +22,7 @@ use std::mem;
 
 use crate::Block;
 ///The AES 128 struct
+#[derive(Clone, Debug)]
 pub struct Aes([Block; 11]);
 
 #[allow(unused_macros)]
