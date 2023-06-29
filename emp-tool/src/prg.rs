@@ -1,6 +1,6 @@
 //! Implement AES-based PRG.
 
-use crate::{aes::Aes, Block};
+use crate::{aes::Aes, constants::AES_BLOCK_SIZE, Block};
 use rand::Rng;
 use rand_core::{
     block::{BlockRng, BlockRngCore},
@@ -17,14 +17,19 @@ pub struct PrgCore {
 
 impl BlockRngCore for PrgCore {
     type Item = u32;
-    type Results = [u32; 32];
+    type Results = [u32; 4 * AES_BLOCK_SIZE];
 
     // Compute [AES(state)..AES(state+8)]
     #[inline(always)]
     fn generate(&mut self, results: &mut Self::Results) {
-        let states = [0u128, 1u128, 2u128, 3u128, 4u128, 5u128, 6u128, 7u128];
-        let states = states.map(|x| Block::from(x + self.state));
-        self.state += 8;
+        let states = [0; AES_BLOCK_SIZE].map(
+            #[inline(always)]
+            |_| {
+                let x = self.state;
+                self.state += 1;
+                Block::from(x)
+            },
+        );
         *results = unsafe { mem::transmute(self.aes.encrypt_many_blocks(states)) }
     }
 }
@@ -124,9 +129,8 @@ impl Prg {
     /// Fill a block slice with random block values.
     #[inline(always)]
     pub fn random_blocks(&mut self, buf: &mut [Block]) {
-        let ptr = buf.as_ptr() as *mut u8;
         let bytes =
-            unsafe { core::slice::from_raw_parts_mut(ptr, buf.len() * mem::size_of::<Block>()) };
+            unsafe { core::slice::from_raw_parts_mut(buf.as_ptr() as *mut u8, buf.len() * 16) };
         self.fill_bytes(bytes);
     }
 }

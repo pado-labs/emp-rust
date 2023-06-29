@@ -15,7 +15,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("aes::encrypt_block", move |bench| {
         bench.iter(|| {
-            black_box(aes.encrypt_block(blk));
+            let z = aes.encrypt_block(black_box(blk));
+            black_box(z);
         });
     });
 
@@ -25,7 +26,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         let blks = rand::random::<[Block; 8]>();
 
         bench.iter(|| {
-            black_box(aes.encrypt_many_blocks::<8>(blks));
+            let z = aes.encrypt_many_blocks(black_box(blks));
+            black_box(z);
         });
     });
 
@@ -35,7 +37,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         let blks = rand::random::<[Block; 8]>();
 
         bench.iter(|| {
-            black_box(aes.encrypt_vec_blocks(&blks));
+            let z = aes.encrypt_vec_blocks(black_box(&blks));
+            black_box(z);
         });
     });
 }

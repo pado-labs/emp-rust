@@ -2,14 +2,16 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use emp_tool::{
     hash::{CcrHash, CrHash, TccrHash},
-    ZERO_BLOCK,
+    Block, ZERO_BLOCK,
 };
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("hash::cr", move |bench| {
         let hash = CrHash::new();
+        let i = rand::random::<Block>();
         bench.iter(|| {
-            black_box(hash.hash_block(ZERO_BLOCK));
+            let z = hash.hash_block(black_box(i));
+            black_box(z);
         });
     });
 
@@ -22,8 +24,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("hash::ccr", move |bench| {
         let hash = CcrHash::new();
+        let i = rand::random::<Block>();
         bench.iter(|| {
-            black_box(hash.hash_block(ZERO_BLOCK));
+            let z = hash.hash_block(black_box(i));
+            black_box(z);
         });
     });
 
@@ -36,8 +40,11 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("hash::tccr", move |bench| {
         let hash = TccrHash::new();
+        let x = rand::random::<Block>();
+        let i = rand::random::<u64>();
         bench.iter(|| {
-            black_box(hash.hash_block(ZERO_BLOCK, 1));
+            let z = hash.hash_block(black_box(x), black_box(i));
+            black_box(z);
         });
     });
 

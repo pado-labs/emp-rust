@@ -24,3 +24,6 @@ pub const ONES_BLOCK: Block = Block(unsafe { mem::transmute(u128::MAX) });
 
 /// The select array with `ZERO_BLOCK` and `ONES_BLOCK`.
 pub const SELECT_MASK: [Block; 2] = [ZERO_BLOCK, ONES_BLOCK];
+
+/// The AES_BLOCK_SIZE.
+pub const AES_BLOCK_SIZE: usize = 8;
