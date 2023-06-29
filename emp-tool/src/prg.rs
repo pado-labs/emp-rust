@@ -3,7 +3,7 @@
 use crate::{aes::Aes, Block};
 use rand::Rng;
 use rand_core::{
-    block::{BlockRng64, BlockRngCore},
+    block::{BlockRng, BlockRngCore},
     CryptoRng, RngCore, SeedableRng,
 };
 use std::mem;
@@ -16,8 +16,8 @@ pub struct PrgCore {
 }
 
 impl BlockRngCore for PrgCore {
-    type Item = u64;
-    type Results = [u64; 16];
+    type Item = u32;
+    type Results = [u32; 32];
 
     // Compute [AES(state)..AES(state+8)]
     #[inline(always)]
@@ -43,7 +43,7 @@ impl CryptoRng for PrgCore {}
 
 /// Struct of PRG
 #[derive(Clone, Debug)]
-pub struct Prg(BlockRng64<PrgCore>);
+pub struct Prg(BlockRng<PrgCore>);
 
 impl RngCore for Prg {
     #[inline(always)]
@@ -72,12 +72,12 @@ impl SeedableRng for Prg {
 
     #[inline(always)]
     fn from_seed(seed: Self::Seed) -> Self {
-        Prg(BlockRng64::<PrgCore>::from_seed(seed))
+        Prg(BlockRng::<PrgCore>::from_seed(seed))
     }
 
     #[inline(always)]
     fn from_rng<R: RngCore>(rng: R) -> Result<Self, rand_core::Error> {
-        BlockRng64::<PrgCore>::from_rng(rng).map(Prg)
+        BlockRng::<PrgCore>::from_rng(rng).map(Prg)
     }
 }
 
