@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     aes::Aes,
-    constants::{DIGEST_SIZE, HASH_BUFFER_SIZE},
+    constants::DIGEST_SIZE,
     Block, ZERO_BLOCK,
 };
 
@@ -126,55 +126,28 @@ impl TccrHash {
 }
 
 /// A wrapper of SHA256
-pub struct Hash {
-    sha: Sha256,
-    buffer: [u8; HASH_BUFFER_SIZE],
-    size: usize,
-}
+pub struct Hash(Sha256);
 
 impl Hash {
     /// New a hash instance.
     #[inline(always)]
     pub fn new() -> Self {
-        Self {
-            sha: Sha256::new(),
-            buffer: [0u8; HASH_BUFFER_SIZE],
-            size: 0,
-        }
+        Self(Sha256::new())
     }
 
     /// Update bytes.
     #[inline(always)]
     pub fn update(&mut self, m: &[u8]) {
-        let nbyte = m.len();
-        if nbyte >= HASH_BUFFER_SIZE {
-            self.sha.update(m);
-        } else if self.size + nbyte < HASH_BUFFER_SIZE {
-            self.buffer[self.size..self.size + nbyte].copy_from_slice(m);
-            self.size += nbyte;
-        } else {
-            self.sha.update(&self.buffer[0..self.size]);
-            self.buffer[0..nbyte].copy_from_slice(m);
-            self.size = nbyte;
-        }
+        self.0.update(m);
     }
 
     /// Finalize output
     #[inline(always)]
     pub fn finalize(&mut self) -> [u8; DIGEST_SIZE] {
-        if self.size > 0 {
-            self.sha.update(&self.buffer[0..self.size]);
-        }
-        let hasher = self.sha.clone();
+        let hasher = self.0.clone();
         let mut res = [0u8; DIGEST_SIZE];
         res.copy_from_slice(&hasher.finalize());
-        self.reset();
         res
-    }
-
-    fn reset(&mut self) {
-        self.sha = Sha256::new();
-        self.size = 0;
     }
 
     /// Update block.
