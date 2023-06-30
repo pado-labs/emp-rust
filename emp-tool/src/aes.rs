@@ -240,6 +240,13 @@ impl Aes {
     pub fn encrypt_vec_blocks(&self, blks: &[Block]) -> Vec<Block> {
         blks.iter().map(|x| self.encrypt_block(*x)).collect()
     }
+
+    // Encrypt block slice
+    // #[inline(always)]
+    // pub fn encrypt_block_slice(&self, blks: &mut [Block]) {
+    //     let ptr = unsafe { blks.as_ptr().add(1) };
+    //     let a:[Block;8] = unsafe{mem::transmute(&blks[0..8])};
+    // }
 }
 
 #[test]
