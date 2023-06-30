@@ -30,3 +30,6 @@ pub const AES_BLOCK_SIZE: usize = 8;
 
 /// Hash Digest Size
 pub const DIGEST_SIZE: usize = 32;
+
+/// Hash buffer size
+pub const HASH_BUFFER_SIZE: usize = 8192;

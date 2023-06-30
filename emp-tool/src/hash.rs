@@ -2,7 +2,11 @@
 
 use sha2::{Digest, Sha256};
 
-use crate::{aes::Aes, constants::DIGEST_SIZE, Block, ZERO_BLOCK};
+use crate::{
+    aes::Aes,
+    constants::{DIGEST_SIZE, HASH_BUFFER_SIZE},
+    Block, ZERO_BLOCK,
+};
 
 /// Correlation-robust hash function for 128-bit inputs
 /// (cf. <https://eprint.iacr.org/2019/074>, §7.2).
@@ -122,28 +126,55 @@ impl TccrHash {
 }
 
 /// A wrapper of SHA256
-pub struct Hash(Sha256);
+pub struct Hash {
+    sha: Sha256,
+    buffer: [u8; HASH_BUFFER_SIZE],
+    size: usize,
+}
 
 impl Hash {
     /// New a hash instance.
     #[inline(always)]
     pub fn new() -> Self {
-        Self(Sha256::new())
+        Self {
+            sha: Sha256::new(),
+            buffer: [0u8; HASH_BUFFER_SIZE],
+            size: 0,
+        }
     }
 
     /// Update bytes.
     #[inline(always)]
     pub fn update(&mut self, m: &[u8]) {
-        self.0.update(m);
+        let nbyte = m.len();
+        if nbyte >= HASH_BUFFER_SIZE {
+            self.sha.update(m);
+        } else if self.size + nbyte < HASH_BUFFER_SIZE {
+            self.buffer[self.size..self.size + nbyte].copy_from_slice(m);
+            self.size += nbyte;
+        } else {
+            self.sha.update(&self.buffer[0..self.size]);
+            self.buffer[0..nbyte].copy_from_slice(m);
+            self.size = nbyte;
+        }
     }
 
     /// Finalize output
     #[inline(always)]
-    pub fn finalize(&self) -> [u8; DIGEST_SIZE] {
-        let hasher = self.0.clone();
+    pub fn finalize(&mut self) -> [u8; DIGEST_SIZE] {
+        if self.size > 0 {
+            self.sha.update(&self.buffer[0..self.size]);
+        }
+        let hasher = self.sha.clone();
         let mut res = [0u8; DIGEST_SIZE];
         res.copy_from_slice(&hasher.finalize());
+        self.reset();
         res
+    }
+
+    fn reset(&mut self) {
+        self.sha = Sha256::new();
+        self.size = 0;
     }
 
     /// Update block.
