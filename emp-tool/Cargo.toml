@@ -9,12 +9,11 @@ edition = "2021"
 rand = { version = "0.8" }
 structopt = { version = "0.3.20" }
 rand_core = { version = "0.6.4" }
-# sha2 = { version = "0.10.0" , features = ["asm","asm-aarch64"]}
 
 [target."cfg(target_arch = \"aarch64\")".dependencies]
-sha2 = { version = "0.10.0", features = ["asm", "asm-aarch64"] }
+sha2 = { version = "0.10.7", features = ["asm", "asm-aarch64"] }
 [target."cfg(any(target_arch = \"x86\", target_arch = \"x86_64\"))".dependencies]
-sha2 = {version = "0.10.7"}
+sha2 = {version = "0.10.7", features = ["asm"]}
 
 [dev-dependencies]
 rand = { version = "0.8" }
