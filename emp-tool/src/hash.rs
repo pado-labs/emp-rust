@@ -2,11 +2,7 @@
 
 use sha2::{Digest, Sha256};
 
-use crate::{
-    aes::Aes,
-    constants::DIGEST_SIZE,
-    Block, ZERO_BLOCK,
-};
+use crate::{aes::Aes, constants::DIGEST_SIZE, Block, ZERO_BLOCK};
 
 /// Correlation-robust hash function for 128-bit inputs
 /// (cf. <https://eprint.iacr.org/2019/074>, §7.2).
