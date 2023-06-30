@@ -3,7 +3,7 @@ rustflags = [
     "-C",
     "target-cpu=native",
     "-C",
-    "target_feature=+aes,+pclmulqdq,+sha",
+    "target_feature=+aes,+pclmulqdq",
 ]
 
 [target.'cfg(target_arch = "aarch64")']
