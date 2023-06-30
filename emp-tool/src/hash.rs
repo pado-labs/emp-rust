@@ -1,6 +1,8 @@
 //! Define hashes based on AES.
 
-use crate::{aes::Aes, Block, ZERO_BLOCK};
+use sha2::{Digest, Sha256};
+
+use crate::{aes::Aes, constants::DIGEST_SIZE, Block, ZERO_BLOCK};
 
 /// Correlation-robust hash function for 128-bit inputs
 /// (cf. <https://eprint.iacr.org/2019/074>, §7.2).
@@ -116,6 +118,59 @@ impl TccrHash {
             res[i] ^= y[i]
         }
         res
+    }
+}
+
+/// A wrapper of SHA256
+pub struct Hash(Sha256);
+
+impl Hash {
+    /// New a hash instance.
+    #[inline(always)]
+    pub fn new() -> Self {
+        Self(Sha256::new())
+    }
+
+    /// Update bytes.
+    #[inline(always)]
+    pub fn update(&mut self, m: &[u8]) {
+        self.0.update(m);
+    }
+
+    /// Finalize output
+    #[inline(always)]
+    pub fn finalize(&self) -> [u8; DIGEST_SIZE] {
+        let hasher = self.0.clone();
+        let mut res = [0u8; DIGEST_SIZE];
+        res.copy_from_slice(&hasher.finalize());
+        res
+    }
+
+    /// Update block.
+    #[inline(always)]
+    pub fn update_block(&mut self, m: Block) {
+        self.update(m.as_ref());
+    }
+
+    /// Update block slice.
+    #[inline(always)]
+    pub fn update_block_slice(&mut self, m: &[Block]) {
+        let ptr = m.as_ptr() as *const u8;
+        self.update(unsafe { core::slice::from_raw_parts(ptr, m.len() * 16) });
+    }
+
+    /// Hash bytes once.
+    #[inline(always)]
+    pub fn hash_bytes_once(&mut self, m: &[u8]) -> [u8; DIGEST_SIZE] {
+        self.update(m);
+        self.finalize()
+    }
+
+    /// Hash blocks once.
+    #[inline(always)]
+    pub fn hash_blocks_once(&mut self, m: &[Block]) -> [u8; DIGEST_SIZE] {
+        self.update_block_slice(m);
+        self.finalize()
     }
 }
 

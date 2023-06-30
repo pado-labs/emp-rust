@@ -6,14 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = {version = "0.8"}
-structopt = {version = "0.3.20"}
-rand_core = {version = "0.6.4"}
+rand = { version = "0.8" }
+structopt = { version = "0.3.20" }
+rand_core = { version = "0.6.4" }
+sha2 = { version = "0.10.0" }
 
 [dev-dependencies]
-rand = {version = "0.8"}
-rand_chacha = {version = "0.3"}
-criterion = {version = "0.5.1"}
+rand = { version = "0.8" }
+rand_chacha = { version = "0.3" }
+criterion = { version = "0.5.1" }
 
 [[bench]]
 name = "block"
