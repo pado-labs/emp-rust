@@ -20,7 +20,7 @@ use crate::{
 #[cfg(target_arch = "aarch64")]
 use std::mem;
 
-use crate::Block;
+use crate::{constants::AES_BLOCK_SIZE, Block};
 ///The AES 128 struct
 #[derive(Clone, Debug)]
 pub struct Aes([Block; 11]);
@@ -241,12 +241,20 @@ impl Aes {
         blks.iter().map(|x| self.encrypt_block(*x)).collect()
     }
 
-    // Encrypt block slice
-    // #[inline(always)]
-    // pub fn encrypt_block_slice(&self, blks: &mut [Block]) {
-    //     let ptr = unsafe { blks.as_ptr().add(1) };
-    //     let a:[Block;8] = unsafe{mem::transmute(&blks[0..8])};
-    // }
+    /// Encrypt block slice
+    #[inline(always)]
+    pub fn encrypt_block_slice(&self, blks: &mut [Block]) {
+        let len = blks.len();
+        let ptr = blks.as_mut_ptr() as *mut [Block; AES_BLOCK_SIZE];
+        for i in 0..len / AES_BLOCK_SIZE {
+            let buf = unsafe { &mut *ptr.add(i) };
+            *buf = self.encrypt_many_blocks(*buf);
+        }
+
+        let remain = len % AES_BLOCK_SIZE;
+        let last = self.encrypt_vec_blocks(&blks[len - remain..]);
+        blks[len - remain..].copy_from_slice(&last);
+    }
 }
 
 #[test]

@@ -35,10 +35,21 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("aes::encrypt_vec_blocks::<8>", move |bench| {
         let key = rand::random::<Block>();
         let aes = Aes::new(key);
-        let blks = rand::random::<[Block; 8]>();
+        let blks = rand::random::<[Block; 10]>();
 
         bench.iter(|| {
             let z = aes.encrypt_vec_blocks(black_box(&blks));
+            black_box(z);
+        });
+    });
+
+    c.bench_function("aes::encrypt_block_slice::<8>", move |bench| {
+        let key = rand::random::<Block>();
+        let aes = Aes::new(key);
+        let mut blks = rand::random::<[Block; 10]>();
+
+        bench.iter(|| {
+            let z = aes.encrypt_block_slice(black_box(&mut blks));
             black_box(z);
         });
     });
