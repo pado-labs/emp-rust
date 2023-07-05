@@ -235,9 +235,9 @@ impl Aes {
         ctxt.map(|x| Block(x))
     }
 
-    /// Encrypt block vector
+    // Encrypt block vector
     #[inline(always)]
-    pub fn encrypt_vec_blocks(&self, blks: &[Block]) -> Vec<Block> {
+    fn encrypt_vec_blocks(&self, blks: &[Block]) -> Vec<Block> {
         blks.iter().map(|x| self.encrypt_block(*x)).collect()
     }
 
@@ -268,4 +268,8 @@ fn aes_test() {
     assert_eq!(d, [res; 8]);
     let e = aes.encrypt_vec_blocks(&blks);
     assert_eq!(e, [res; 8].to_vec());
+
+    let mut f = [Block::default(); 8];
+    aes.encrypt_block_slice(&mut f);
+    assert_eq!(f, [res; 8]);
 }
