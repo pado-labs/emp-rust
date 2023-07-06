@@ -1,5 +1,4 @@
-//! Implement the two-key PRG
-//! kappa->2kappa, implemented as G(k) = PRF_seed0(k)\xor k || PRF_seed1(k)\xor k
+//! Implement the two-key PRG as G(k) = PRF_seed0(k)\xor k || PRF_seed1(k)\xor k
 
 use crate::{aes::Aes, Block, ZERO_BLOCK};
 
@@ -27,9 +26,9 @@ impl TwoKeyPrp {
     }
 
     /// expand 2 to 4
-    ///     p[0]            p[1]
-    /// c[0]    c[1]    c[2]    c[3]
-    /// t[0]    t[2]    t[1]    t[3]
+    //     p[0]            p[1]
+    // c[0]    c[1]    c[2]    c[3]
+    // t[0]    t[2]    t[1]    t[3]
     #[inline(always)]
     pub fn node_expand_2to4(&self, parent: [Block; 2]) -> [Block; 4] {
         let mut tmp = [ZERO_BLOCK; 4];
@@ -56,9 +55,9 @@ impl TwoKeyPrp {
     }
 
     /// expand 4 to 8
-    ///     p[0]            p[1]            p[2]            p[3]
-    /// c[0]    c[1]    c[2]    c[3]    c[4]    c[5]    c[6]    c[7]
-    /// t[0]    t[4]    t[1]    t[5]    t[2]    t[6]    t[3]    t[7]
+    //     p[0]            p[1]            p[2]            p[3]
+    // c[0]    c[1]    c[2]    c[3]    c[4]    c[5]    c[6]    c[7]
+    // t[0]    t[4]    t[1]    t[5]    t[2]    t[6]    t[3]    t[7]
     #[inline(always)]
     pub fn node_expand_4to8(&self, parent: [Block; 4]) -> [Block; 8] {
         let mut tmp = [ZERO_BLOCK; 8];
