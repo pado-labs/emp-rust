@@ -10,6 +10,7 @@ use core::arch::x86_64::*;
 
 #[cfg(target_arch = "aarch64")]
 use crate::sse2neon::AES_SBOX;
+use crate::ZERO_BLOCK;
 
 #[cfg(target_arch = "aarch64")]
 use crate::{
@@ -22,7 +23,7 @@ use std::mem;
 
 use crate::{constants::AES_BLOCK_SIZE, Block};
 ///The AES 128 struct
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Aes([Block; 11]);
 
 #[allow(unused_macros)]
@@ -255,6 +256,19 @@ impl Aes {
         let last = self.encrypt_vec_blocks(&blks[len - remain..]);
         blks[len - remain..].copy_from_slice(&last);
     }
+
+    /// Encrypt many blocks with many keys.
+    #[inline(always)]
+    pub fn para_encrypt<const NK: usize, const NM: usize>(keys: [Self; NK], blks: &mut [Block]) {
+        let ptr = blks.as_mut_ptr() as *mut [Block; NM];
+        let mut msg = [ZERO_BLOCK; NM];
+        msg.copy_from_slice(&blks[0..NM]);
+
+        for i in 0..NK {
+            let ctxt = unsafe { &mut *ptr.add(i) };
+            *ctxt = keys[i].encrypt_many_blocks(msg);
+        }
+    }
 }
 
 #[test]
@@ -272,4 +286,19 @@ fn aes_test() {
     let mut f = [Block::default(); 8];
     aes.encrypt_block_slice(&mut f);
     assert_eq!(f, [res; 8]);
+
+    let aes1 = Aes::new(crate::constants::ONES_BLOCK);
+    let mut blks = [Block::default(); 4];
+    blks[1] = crate::constants::ONES_BLOCK;
+    blks[3] = crate::constants::ONES_BLOCK;
+    Aes::para_encrypt::<2, 2>([aes, aes1], &mut blks);
+    assert_eq!(
+        blks,
+        [
+            Block::from(0x2E2B34CA59FA4C883B2C8AEFD44BE966),
+            Block::from(0x4E668D3ED24773FA0A5A85EAC98C5B3F),
+            Block::from(0x2CC9BF3845486489CD5F7D878C25F6A1),
+            Block::from(0x79B93A19527051B230CF80B27C21BFBC)
+        ]
+    );
 }

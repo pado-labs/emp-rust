@@ -42,6 +42,18 @@ fn criterion_benchmark(c: &mut Criterion) {
             black_box(z);
         });
     });
+
+    c.bench_function("aes::para_encrypt::<1,8>", move |bench| {
+        let key = rand::random::<Block>();
+        let aes = Aes::new(key);
+        let aes = [aes];
+        let mut blks = rand::random::<[Block; 8]>();
+
+        bench.iter(|| {
+            let z = Aes::para_encrypt::<1, 8>(black_box(aes), black_box(&mut blks));
+            black_box(z);
+        });
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);
