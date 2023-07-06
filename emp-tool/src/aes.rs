@@ -10,7 +10,6 @@ use core::arch::x86_64::*;
 
 #[cfg(target_arch = "aarch64")]
 use crate::sse2neon::AES_SBOX;
-use crate::ZERO_BLOCK;
 
 #[cfg(target_arch = "aarch64")]
 use crate::{
@@ -261,12 +260,9 @@ impl Aes {
     #[inline(always)]
     pub fn para_encrypt<const NK: usize, const NM: usize>(keys: [Self; NK], blks: &mut [Block]) {
         let ptr = blks.as_mut_ptr() as *mut [Block; NM];
-        let mut msg = [ZERO_BLOCK; NM];
-        msg.copy_from_slice(&blks[0..NM]);
-
         for i in 0..NK {
             let ctxt = unsafe { &mut *ptr.add(i) };
-            *ctxt = keys[i].encrypt_many_blocks(msg);
+            *ctxt = keys[i].encrypt_many_blocks(*ctxt);
         }
     }
 }
@@ -290,7 +286,7 @@ fn aes_test() {
     let aes1 = Aes::new(crate::constants::ONES_BLOCK);
     let mut blks = [Block::default(); 4];
     blks[1] = crate::constants::ONES_BLOCK;
-    blks[3] = crate::constants::ONES_BLOCK;
+    blks[3] = crate::constants::ZERO_BLOCK;
     Aes::para_encrypt::<2, 2>([aes, aes1], &mut blks);
     assert_eq!(
         blks,
