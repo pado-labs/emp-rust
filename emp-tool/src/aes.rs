@@ -286,7 +286,7 @@ fn aes_test() {
     let aes1 = Aes::new(crate::constants::ONES_BLOCK);
     let mut blks = [Block::default(); 4];
     blks[1] = crate::constants::ONES_BLOCK;
-    blks[3] = crate::constants::ZERO_BLOCK;
+    blks[3] = crate::constants::ONES_BLOCK;
     Aes::para_encrypt::<2, 2>([aes, aes1], &mut blks);
     assert_eq!(
         blks,

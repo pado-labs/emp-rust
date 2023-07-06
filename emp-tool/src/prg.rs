@@ -9,7 +9,7 @@ use rand_core::{
 use std::mem;
 
 ///Struct of PRG Core
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct PrgCore {
     aes: Aes,
     state: u64,

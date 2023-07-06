@@ -10,6 +10,7 @@ pub mod hash;
 pub mod io_channel;
 pub mod prg;
 pub mod sse2neon;
+pub mod tkprp;
 pub mod utils;
 
 pub use block::Block;
@@ -17,4 +18,5 @@ pub use constants::{ALICE, BOB, NETWORK_BUFFER_SIZE, ONES_BLOCK, SELECT_MASK, ZE
 pub use hash::{CcrHash, CrHash, TccrHash};
 pub use io_channel::{CommandLineOpt, IOChannel, NetIO};
 pub use sse2neon::*;
+pub use tkprp::TwoKeyPrp;
 pub use utils::{pack_bits_to_bytes, unpack_bytes_to_bits};
