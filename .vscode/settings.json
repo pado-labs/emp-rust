@@ -1,6 +1,0 @@
-{
-    "rust-analyzer.linkedProjects": [
-        "./emp-tool/Cargo.toml"
-    ],
-    "rust-analyzer.showUnlinkedFileNotification": false
-}

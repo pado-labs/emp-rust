@@ -1,5 +1,10 @@
 [target.'cfg(any(target_arch = "x86", target_arch = "x86_64"))']
-rustflags = ["-C", "target-cpu=native", "-C", "target_feature=+aes,+pclmulqdq"]
+rustflags = [
+    "-C",
+    "target-cpu=native",
+    "-C",
+    "target_feature=+aes,+pclmulqdq",
+]
 
 [target.'cfg(target_arch = "aarch64")']
 rustflags = ["-C", "target-cpu=native", "-C", "target_feature=+neon,+aes"]

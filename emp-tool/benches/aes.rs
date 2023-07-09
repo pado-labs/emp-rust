@@ -9,13 +9,15 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("aes::new", move |bench| {
         bench.iter(|| {
-            black_box(Aes::new(x));
+            let z = Aes::new(black_box(x));
+            black_box(black_box(z));
         });
     });
 
     c.bench_function("aes::encrypt_block", move |bench| {
         bench.iter(|| {
-            black_box(aes.encrypt_block(blk));
+            let z = aes.encrypt_block(black_box(blk));
+            black_box(z);
         });
     });
 
@@ -25,17 +27,31 @@ fn criterion_benchmark(c: &mut Criterion) {
         let blks = rand::random::<[Block; 8]>();
 
         bench.iter(|| {
-            black_box(aes.encrypt_many_blocks::<8>(blks));
+            let z = aes.encrypt_many_blocks(black_box(blks));
+            black_box(z);
         });
     });
 
-    c.bench_function("aes::encrypt_vec_blocks::<8>", move |bench| {
+    c.bench_function("aes::encrypt_block_slice::<8>", move |bench| {
         let key = rand::random::<Block>();
         let aes = Aes::new(key);
-        let blks = rand::random::<[Block; 8]>();
+        let mut blks = rand::random::<[Block; 8]>();
 
         bench.iter(|| {
-            black_box(aes.encrypt_vec_blocks(&blks));
+            let z = aes.encrypt_block_slice(black_box(&mut blks));
+            black_box(z);
+        });
+    });
+
+    c.bench_function("aes::para_encrypt::<1,8>", move |bench| {
+        let key = rand::random::<Block>();
+        let aes = Aes::new(key);
+        let aes = [aes];
+        let mut blks = rand::random::<[Block; 8]>();
+
+        bench.iter(|| {
+            let z = Aes::para_encrypt::<1, 8>(black_box(aes), black_box(&mut blks));
+            black_box(z);
         });
     });
 }

@@ -20,8 +20,9 @@ use crate::{
 #[cfg(target_arch = "aarch64")]
 use std::mem;
 
-use crate::Block;
+use crate::{constants::AES_BLOCK_SIZE, Block};
 ///The AES 128 struct
+#[derive(Copy, Clone, Debug)]
 pub struct Aes([Block; 11]);
 
 #[allow(unused_macros)]
@@ -234,10 +235,35 @@ impl Aes {
         ctxt.map(|x| Block(x))
     }
 
-    /// Encrypt block vector
+    // Encrypt block vector
     #[inline(always)]
-    pub fn encrypt_vec_blocks(&self, blks: &[Block]) -> Vec<Block> {
+    fn encrypt_vec_blocks(&self, blks: &[Block]) -> Vec<Block> {
         blks.iter().map(|x| self.encrypt_block(*x)).collect()
+    }
+
+    /// Encrypt block slice
+    #[inline(always)]
+    pub fn encrypt_block_slice(&self, blks: &mut [Block]) {
+        let len = blks.len();
+        let ptr = blks.as_mut_ptr() as *mut [Block; AES_BLOCK_SIZE];
+        for i in 0..len / AES_BLOCK_SIZE {
+            let buf = unsafe { &mut *ptr.add(i) };
+            *buf = self.encrypt_many_blocks(*buf);
+        }
+
+        let remain = len % AES_BLOCK_SIZE;
+        let last = self.encrypt_vec_blocks(&blks[len - remain..]);
+        blks[len - remain..].copy_from_slice(&last);
+    }
+
+    /// Encrypt many blocks with many keys.
+    #[inline(always)]
+    pub fn para_encrypt<const NK: usize, const NM: usize>(keys: [Self; NK], blks: &mut [Block]) {
+        let ptr = blks.as_mut_ptr() as *mut [Block; NM];
+        for i in 0..NK {
+            let ctxt = unsafe { &mut *ptr.add(i) };
+            *ctxt = keys[i].encrypt_many_blocks(*ctxt);
+        }
     }
 }
 
@@ -252,4 +278,23 @@ fn aes_test() {
     assert_eq!(d, [res; 8]);
     let e = aes.encrypt_vec_blocks(&blks);
     assert_eq!(e, [res; 8].to_vec());
+
+    let mut f = [Block::default(); 8];
+    aes.encrypt_block_slice(&mut f);
+    assert_eq!(f, [res; 8]);
+
+    let aes1 = Aes::new(crate::constants::ONES_BLOCK);
+    let mut blks = [Block::default(); 4];
+    blks[1] = crate::constants::ONES_BLOCK;
+    blks[3] = crate::constants::ONES_BLOCK;
+    Aes::para_encrypt::<2, 2>([aes, aes1], &mut blks);
+    assert_eq!(
+        blks,
+        [
+            Block::from(0x2E2B34CA59FA4C883B2C8AEFD44BE966),
+            Block::from(0x4E668D3ED24773FA0A5A85EAC98C5B3F),
+            Block::from(0x2CC9BF3845486489CD5F7D878C25F6A1),
+            Block::from(0x79B93A19527051B230CF80B27C21BFBC)
+        ]
+    );
 }
