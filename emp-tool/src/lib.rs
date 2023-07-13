@@ -6,6 +6,7 @@ pub mod aes;
 
 pub mod block;
 pub mod constants;
+pub mod ggm_tree;
 pub mod hash;
 pub mod io_channel;
 pub mod prg;
@@ -15,6 +16,7 @@ pub mod utils;
 
 pub use block::Block;
 pub use constants::{ALICE, BOB, NETWORK_BUFFER_SIZE, ONES_BLOCK, SELECT_MASK, ZERO_BLOCK};
+pub use ggm_tree::GgmTree;
 pub use hash::{CcrHash, CrHash, TccrHash};
 pub use io_channel::{CommandLineOpt, IOChannel, NetIO};
 pub use sse2neon::*;

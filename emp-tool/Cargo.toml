@@ -36,6 +36,10 @@ harness = false
 name = "prg"
 harness = false
 
+[[bench]]
+name = "ggm"
+harness = false
+
 [[example]]
 name = "netio"
 path = "examples/netio.rs"
