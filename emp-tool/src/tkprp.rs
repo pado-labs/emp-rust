@@ -102,10 +102,9 @@ impl TwoKeyPrp {
         children
     }
 
-
     /// expand 4 to 8
     #[inline(always)]
-    pub fn expand_4to8_inplace(&self, children:&mut [Block]){
+    pub fn expand_4to8_inplace(&self, children: &mut [Block]) {
         let mut tmp = [ZERO_BLOCK; 8];
         tmp[7] = children[3];
         tmp[3] = children[3];
