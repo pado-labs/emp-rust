@@ -237,6 +237,7 @@ impl Aes {
 
     // Encrypt block vector
     #[inline(always)]
+    #[allow(dead_code)]
     fn encrypt_vec_blocks(&self, blks: &[Block]) -> Vec<Block> {
         blks.iter().map(|x| self.encrypt_block(*x)).collect()
     }
@@ -252,8 +253,26 @@ impl Aes {
         }
 
         let remain = len % AES_BLOCK_SIZE;
-        let last = self.encrypt_vec_blocks(&blks[len - remain..]);
-        blks[len - remain..].copy_from_slice(&last);
+        if remain > 0 {
+            let ptr = blks.as_mut_ptr() as *mut Block;
+            let tmp = unsafe { ptr.add(len - remain) };
+            macro_rules! encrypt_some {
+                ($n:expr) => {{
+                    if remain == $n {
+                        let ptr = tmp as *mut [Block; $n];
+                        let buf = unsafe { &mut *ptr };
+                        *buf = self.encrypt_many_blocks(*buf);
+                    }
+                }};
+            }
+            encrypt_some!(1);
+            encrypt_some!(2);
+            encrypt_some!(3);
+            encrypt_some!(4);
+            encrypt_some!(5);
+            encrypt_some!(6);
+            encrypt_some!(7);
+        }
     }
 
     /// Encrypt many blocks with many keys.
@@ -273,15 +292,31 @@ fn aes_test() {
     let c = aes.encrypt_block(Block::default());
     let res = Block::from(0x2e2b34ca59fa4c883b2c8aefd44be966);
     assert_eq!(c, res);
-    let blks = [Block::default(); 8];
-    let d = aes.encrypt_many_blocks(blks);
-    assert_eq!(d, [res; 8]);
-    let e = aes.encrypt_vec_blocks(&blks);
-    assert_eq!(e, [res; 8].to_vec());
 
-    let mut f = [Block::default(); 8];
-    aes.encrypt_block_slice(&mut f);
-    assert_eq!(f, [res; 8]);
+    macro_rules! encrypt_test {
+        ($n:expr) => {{
+            let blks = [Block::default(); $n];
+
+            let d = aes.encrypt_many_blocks(blks);
+            assert_eq!(d, [res; $n]);
+
+            let e = aes.encrypt_vec_blocks(&blks);
+            assert_eq!(e, [res; $n].to_vec());
+
+            let mut f = [Block::default(); $n];
+            aes.encrypt_block_slice(&mut f);
+            assert_eq!(f, [res; $n]);
+        }};
+    }
+    encrypt_test!(1);
+    encrypt_test!(2);
+    encrypt_test!(3);
+    encrypt_test!(4);
+    encrypt_test!(5);
+    encrypt_test!(6);
+    encrypt_test!(7);
+    encrypt_test!(8);
+    encrypt_test!(9);
 
     let aes1 = Aes::new(crate::constants::ONES_BLOCK);
     let mut blks = [Block::default(); 4];
