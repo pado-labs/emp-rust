@@ -199,4 +199,7 @@ impl TwoKeyPrp {
 
         children
     }
+
+    //     /// extend 8 to 16
+    //     pub fn extend_8to16(&self, children: &mut [Block], parent: &[Block]) {}
 }
