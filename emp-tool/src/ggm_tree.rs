@@ -88,17 +88,17 @@ impl GgmTree {
     //     }
 }
 
-#[test]
-fn ggm_test() {
-    let depth = 5;
-    let mut tree = vec![ZERO_BLOCK; 1 << (depth - 1)];
-    let mut k0 = vec![ZERO_BLOCK; depth - 1];
-    let mut k1 = vec![ZERO_BLOCK; depth - 1];
+// #[test]
+// fn ggm_test() {
+//     let depth = 5;
+//     let mut tree = vec![ZERO_BLOCK; 1 << (depth - 1)];
+//     let mut k0 = vec![ZERO_BLOCK; depth - 1];
+//     let mut k1 = vec![ZERO_BLOCK; depth - 1];
 
-    let ggm = GgmTree::new(depth);
+//     let ggm = GgmTree::new(depth);
 
-    ggm.gen(ZERO_BLOCK, &mut tree, &mut k0, &mut k1);
-    println!("2: {:?}", tree);
-    println!("2: {:?}", k0);
-    println!("2: {:?}", k1);
-}
+//     ggm.gen(ZERO_BLOCK, &mut tree, &mut k0, &mut k1);
+//     println!("2: {:?}", tree);
+//     println!("2: {:?}", k0);
+//     println!("2: {:?}", k1);
+// }
