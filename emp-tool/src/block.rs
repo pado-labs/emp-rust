@@ -1,5 +1,6 @@
 //! Define a 128-bit chunk type and related operations.
 
+use bytemuck::{Pod, Zeroable};
 use core::mem;
 use std::{
     fmt::{Debug, Display},
@@ -37,6 +38,9 @@ pub struct Block(pub uint8x16_t);
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct Block(pub __m128i);
+
+unsafe impl Pod for Block {}
+unsafe impl Zeroable for Block {}
 
 impl Block {
     #[inline(always)]
@@ -215,7 +219,7 @@ impl Block {
 
     /// Compute the inner product of two block vectors, without reducing the polynomial.
     #[inline(always)]
-    pub fn inn_prdt_no_red(a: &Vec<Block>, b: &Vec<Block>) -> (Block, Block) {
+    pub fn inn_prdt_no_red(a: &[Block], b: &[Block]) -> (Block, Block) {
         assert_eq!(a.len(), b.len());
         a.iter()
             .zip(b.iter())
@@ -227,7 +231,7 @@ impl Block {
 
     /// Compute the inner product of two block vectors.
     #[inline(always)]
-    pub fn inn_prdt_red(a: &Vec<Block>, b: &Vec<Block>) -> Block {
+    pub fn inn_prdt_red(a: &[Block], b: &[Block]) -> Block {
         let (x, y) = Block::inn_prdt_no_red(a, b);
         Block::reduce(&x, &y)
     }
@@ -266,7 +270,7 @@ impl Block {
         res * res
     }
 
-    ///Function ``sigma( x0 || x1 ) = (x0 xor x1) || x1``.
+    /// Function ``sigma( x0 || x1 ) = (x0 xor x1) || x1``.
     #[inline(always)]
     pub fn sigma(a: Self) -> Self {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
@@ -299,34 +303,41 @@ impl Default for Block {
 impl From<Block> for [u8; 16] {
     #[inline(always)]
     fn from(m: Block) -> [u8; 16] {
-        unsafe { mem::transmute(m) }
+        bytemuck::cast(m)
     }
 }
 
 impl From<Block> for [u64; 2] {
     #[inline(always)]
     fn from(m: Block) -> Self {
-        unsafe { mem::transmute(m) }
+        bytemuck::cast(m)
     }
 }
 
 impl From<Block> for u128 {
     #[inline(always)]
     fn from(m: Block) -> u128 {
-        unsafe { mem::transmute(m) }
+        bytemuck::cast(m)
+    }
+}
+
+impl From<[u8; 16]> for Block {
+    #[inline(always)]
+    fn from(m: [u8; 16]) -> Self {
+        bytemuck::cast(m)
     }
 }
 
 impl From<[u64; 2]> for Block {
     #[inline(always)]
     fn from(m: [u64; 2]) -> Self {
-        unsafe { mem::transmute(m) }
+        bytemuck::cast(m)
     }
 }
 impl From<u128> for Block {
     #[inline(always)]
     fn from(m: u128) -> Block {
-        unsafe { mem::transmute(m) }
+        bytemuck::cast(m)
     }
 }
 
@@ -362,14 +373,14 @@ impl Display for Block {
 impl AsRef<[u8]> for Block {
     #[inline(always)]
     fn as_ref(&self) -> &[u8] {
-        unsafe { &*(self as *const Block as *const [u8; 16]) }
+        bytemuck::bytes_of(self)
     }
 }
 
 impl AsMut<[u8]> for Block {
     #[inline(always)]
     fn as_mut(&mut self) -> &mut [u8] {
-        unsafe { &mut *(self as *mut Block as *mut [u8; 16]) }
+        bytemuck::bytes_of_mut(self)
     }
 }
 
@@ -462,6 +473,31 @@ impl rand::distributions::Distribution<Block> for rand::distributions::Standard 
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Block {
         Block::from(rng.gen::<u128>())
     }
+}
+
+#[test]
+fn type_test() {
+    use rand::{Rng, SeedableRng};
+    use rand_chacha::ChaCha12Rng;
+    let mut rng = ChaCha12Rng::from_entropy();
+
+    let x: [u8; 16] = rng.gen();
+    let blk = Block::from(x);
+    let _x: [u8; 16] = blk.into();
+    assert_eq!(x, _x);
+
+    let x: [u64; 2] = rng.gen();
+    let blk = Block::from(x);
+    let _x: [u64; 2] = blk.into();
+    assert_eq!(x, _x);
+
+    let x: u128 = rng.gen();
+    let blk = Block::from(x);
+    let _x: u128 = blk.into();
+    assert_eq!(x, _x);
+
+    let y = blk.as_ref();
+    assert_eq!(blk, Block::try_from_slice(y).unwrap());
 }
 
 #[test]

@@ -35,4 +35,5 @@ jobs:
         cargo fmt -- --check
         cargo build --verbose
         cargo test --verbose
+        cargo clippy --verbose
         

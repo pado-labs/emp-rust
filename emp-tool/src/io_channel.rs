@@ -31,14 +31,8 @@ pub trait IOChannel {
     /// Send a vector of blocks to the channel.
     #[inline(always)]
     fn send_block_vec(&mut self, buffer: &[Block]) -> Result<()> {
-        // for x in buffer.iter() {
-        //     self.send_block(x)?;
-        // }
-        let len = buffer.len();
-        let ptr = buffer.as_ptr() as *const u8;
-        let bytes =
-            unsafe { ::core::slice::from_raw_parts(ptr, len * ::core::mem::size_of::<Block>()) };
-        self.send_bytes(&bytes)?;
+        let bytes = bytemuck::cast_slice(buffer);
+        self.send_bytes(bytes)?;
         Ok(())
     }
 
@@ -53,13 +47,9 @@ pub trait IOChannel {
     /// Receive a vector of blocks with length `len` from the channel.
     #[inline(always)]
     fn recv_block_vec(&mut self, len: usize) -> Result<Vec<Block>> {
-        // (0..len).map(|_| self.recv_block()).collect()
         let mut blks = vec![Block::default(); len];
-        let ptr = blks.as_mut_ptr() as *mut u8;
-        let mut bytes = unsafe {
-            ::core::slice::from_raw_parts_mut(ptr, len * ::core::mem::size_of::<Block>())
-        };
-        self.recv_bytes(&mut bytes).unwrap();
+        let bytes = bytemuck::cast_slice_mut(&mut blks);
+        self.recv_bytes(bytes).unwrap();
         Ok(blks)
     }
 
