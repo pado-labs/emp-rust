@@ -30,20 +30,17 @@ use crate::{_mm_and_si128, _mm_shuffle_epi32, _mm_xor_si128};
 #[repr(transparent)]
 pub struct Block(pub uint8x16_t);
 
-#[cfg(target_arch = "aarch64")]
-unsafe impl Pod for Block {}
-
-#[cfg(target_arch = "aarch64")]
-unsafe impl Zeroable for Block {}
-
 /// A 128-bit chunk type.\
 /// It is also viewed as an element in `GF(2^128)` with polynomial `x^128 + x^7 + x^2 + x + 1`\
 /// Use intrinsics whenever available to speedup.\
 /// Now support aarch64 and x86/x86_64
 #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-#[derive(Clone, Copy, Pod, Zeroable)]
+#[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct Block(pub __m128i);
+
+unsafe impl Pod for Block {}
+unsafe impl Zeroable for Block {}
 
 impl Block {
     #[inline(always)]
