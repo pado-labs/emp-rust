@@ -39,6 +39,13 @@ impl CrHash {
         res
     }
 }
+
+impl Default for CrHash {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Circular correlation-robust hash function
 /// (cf.<https://eprint.iacr.org/2019/074>, §7.3).
 ///
@@ -79,6 +86,13 @@ impl CcrHash {
         res
     }
 }
+
+impl Default for CcrHash {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Tweakable circular correlation robust hash function
 /// (cf.<https://eprint.iacr.org/2019/074>, §7.4).
 ///
@@ -121,6 +135,12 @@ impl TccrHash {
     }
 }
 
+impl Default for TccrHash {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// A wrapper of SHA256
 pub struct Hash(Sha256);
 
@@ -155,8 +175,7 @@ impl Hash {
     /// Update block slice.
     #[inline(always)]
     pub fn update_block_slice(&mut self, m: &[Block]) {
-        let ptr = m.as_ptr() as *const u8;
-        self.update(unsafe { core::slice::from_raw_parts(ptr, m.len() * 16) });
+        self.update(bytemuck::cast_slice(m));
     }
 
     /// Hash bytes once.
@@ -171,6 +190,12 @@ impl Hash {
     pub fn hash_blocks_once(&mut self, m: &[Block]) -> [u8; DIGEST_SIZE] {
         self.update_block_slice(m);
         self.finalize()
+    }
+}
+
+impl Default for Hash {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

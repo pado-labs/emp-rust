@@ -72,15 +72,15 @@ macro_rules! _mm_aeskeygenassist_si128 {
         let x1 = _mm_cvtsi128_si32!(_mm_shuffle_epi32!($key, 0x55));
         let x3 = _mm_cvtsi128_si32!(_mm_shuffle_epi32!($key, 0xFF));
 
-        let mut x1: [u8; 4] = mem::transmute(x1);
-        let mut x3: [u8; 4] = mem::transmute(x3);
+        let mut x1: [u8; 4] = bytemuck::cast(x1);
+        let mut x3: [u8; 4] = bytemuck::cast(x3);
 
         for i in 0..4 {
             x1[i] = AES_SBOX[x1[i] as usize];
             x3[i] = AES_SBOX[x3[i] as usize];
         }
-        let x1: u32 = mem::transmute(x1);
-        let x3: u32 = mem::transmute(x3);
+        let x1: u32 = bytemuck::cast(x1);
+        let x3: u32 = bytemuck::cast(x3);
 
         vreinterpretq_u8_u32(vld1q_u32(
             [

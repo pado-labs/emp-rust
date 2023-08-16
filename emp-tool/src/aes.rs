@@ -18,8 +18,6 @@ use crate::{
 };
 
 #[cfg(target_arch = "aarch64")]
-use std::mem;
-
 use crate::{constants::AES_BLOCK_SIZE, Block};
 ///The AES 128 struct
 #[derive(Copy, Clone, Debug)]
@@ -232,7 +230,7 @@ impl Aes {
         for i in 0..N {
             ctxt[i] = veorq_u8(vaeseq_u8(ctxt[i], self.0[9].0), self.0[10].0);
         }
-        ctxt.map(|x| Block(x))
+        ctxt.map(Block)
     }
 
     // Encrypt block vector
@@ -257,13 +255,17 @@ impl Aes {
     }
 
     /// Encrypt many blocks with many keys.
+    /// Input: `NK` AES keys, and `NK * NM` blocks
+    /// Output: use each AES key encrypts each bunch of `NM` blocks
+    /// If the length of `blks` is larger than `NK * NM`, do not handle the rest part.
     #[inline(always)]
     pub fn para_encrypt<const NK: usize, const NM: usize>(keys: [Self; NK], blks: &mut [Block]) {
-        let ptr = blks.as_mut_ptr() as *mut [Block; NM];
-        for i in 0..NK {
-            let ctxt = unsafe { &mut *ptr.add(i) };
-            *ctxt = keys[i].encrypt_many_blocks(*ctxt);
-        }
+        assert!(blks.len() >= NM * NK);
+        let mut ctxt = [Block::default(); NM];
+        keys.iter().enumerate().for_each(|(i, key)| {
+            ctxt.copy_from_slice(&blks[i * NM..(i + 1) * NM]);
+            blks[i * NM..(i + 1) * NM].copy_from_slice(&key.encrypt_many_blocks(ctxt))
+        });
     }
 }
 
