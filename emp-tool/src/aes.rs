@@ -17,7 +17,6 @@ use crate::{
     _mm_shuffle_epi32, _mm_shuffle_ps, _mm_xor_si128,
 };
 
-#[cfg(target_arch = "aarch64")]
 use crate::{constants::AES_BLOCK_SIZE, Block};
 ///The AES 128 struct
 #[derive(Copy, Clone, Debug)]
