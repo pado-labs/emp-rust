@@ -1,13 +1,13 @@
 use std::time::Instant;
 
-use emp_tool::{prg::Prg, ZERO_BLOCK};
+use emp_tool::{prg::Prg, Block};
 
 fn prg_perf() {
     let mut length = 2usize;
     while length <= 8192 {
         let times = 1024 * 1024 * 32 / length;
         let start = Instant::now();
-        let mut blks = vec![ZERO_BLOCK; length];
+        let mut blks = vec![Block::ZERO; length];
         let mut prg = Prg::new();
         for _ in 0..times {
             prg.random_blocks(&mut blks);

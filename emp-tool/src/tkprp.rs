@@ -1,7 +1,7 @@
 //! Implement the two-key PRG as G(k) = PRF_seed0(k)\xor k || PRF_seed1(k)\xor k
 //! Refer to (<https://www.usenix.org/system/files/conference/nsdi17/nsdi17-wang-frank.pdf>, Page 8)
 
-use crate::{aes::Aes, Block, ZERO_BLOCK};
+use crate::{aes::Aes, Block};
 
 /// Struct of two-key prp.
 pub struct TwoKeyPrp([Aes; 2]);
@@ -28,7 +28,7 @@ impl TwoKeyPrp {
     // c[0]    c[1]    c[2]    c[3]
     // t[0]    t[2]    t[1]    t[3]    #[inline(always)]
     pub fn expand_2to4(&self, children: &mut [Block], parent: &[Block]) {
-        let mut tmp = [ZERO_BLOCK; 4];
+        let mut tmp = [Block::ZERO; 4];
         children[3] = parent[1];
         children[2] = parent[1];
         children[1] = parent[0];
@@ -53,7 +53,7 @@ impl TwoKeyPrp {
     // t[0]    t[4]    t[1]    t[5]    t[2]    t[6]    t[3]    t[7]
     #[inline(always)]
     pub fn expand_4to8(&self, children: &mut [Block], parent: &[Block]) {
-        let mut tmp = [ZERO_BLOCK; 8];
+        let mut tmp = [Block::ZERO; 8];
         children[7] = parent[3];
         children[6] = parent[3];
         children[5] = parent[2];

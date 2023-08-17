@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-use emp_tool::{prg::Prg, Block, ZERO_BLOCK};
+use emp_tool::{prg::Prg, Block};
 use rand_core::RngCore;
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -42,7 +42,7 @@ fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("Prg::block", move |bench| {
         let mut prg = Prg::new();
-        let mut x = ZERO_BLOCK;
+        let mut x = Block::ZERO;
         bench.iter(|| {
             x = prg.random_block();
             black_box(x);

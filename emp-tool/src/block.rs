@@ -16,8 +16,6 @@ use core::arch::x86::*;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64::*;
 
-use crate::ZERO_BLOCK;
-
 #[cfg(target_arch = "aarch64")]
 use crate::{_mm_and_si128, _mm_shuffle_epi32, _mm_xor_si128};
 
@@ -43,6 +41,15 @@ unsafe impl Pod for Block {}
 unsafe impl Zeroable for Block {}
 
 impl Block {
+    /// The constant block with value `0`.
+    pub const ZERO: Block = Block(unsafe { mem::transmute(0u128) });
+
+    /// The constant block with value `0xFFFF_FFFF_FFFF_FFFF`.
+    pub const ONES: Block = Block(unsafe { mem::transmute(u128::MAX) });
+
+    /// The select array with `ZERO_BLOCK` and `ONES_BLOCK`.
+    pub const SELECT_MASK: [Block; 2] = [Block::ZERO, Block::ONES];
+
     #[inline(always)]
     /// New a Block with a byte slice with length 16.
     pub fn new(bytes: &[u8; 16]) -> Self {
@@ -259,7 +266,7 @@ impl Block {
     #[inline(always)]
     pub fn inverse(&self) -> Self {
         let mut h = *self;
-        if h == ZERO_BLOCK {
+        if h == Block::ZERO {
             panic!("0 has no inverse!");
         }
         let mut res = h;

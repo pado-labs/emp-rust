@@ -1,4 +1,4 @@
-use crate::constants::NETWORK_BUFFER_SIZE;
+// use crate::constants::NETWORK_BUFFER_SIZE;
 use crate::io_channel::IOChannel;
 use core::time;
 use std::io::{BufReader, BufWriter, Read, Result, Write};
@@ -31,6 +31,9 @@ pub struct NetIO {
 }
 
 impl NetIO {
+    // Network buffer size, default `1MB`.
+    const NETWORK_BUFFER_SIZE: usize = 1024 * 1024;
+
     /// New a NetIO with socket address `addr`.\
     /// Determine the server with `is_server`.
     pub fn new<A: ToSocketAddrs + Copy>(is_server: bool, addr: A) -> Result<Self> {
@@ -61,8 +64,9 @@ impl NetIO {
             stream
         };
 
-        let reader = BufReader::with_capacity(NETWORK_BUFFER_SIZE, stream.try_clone().unwrap());
-        let writer = BufWriter::with_capacity(NETWORK_BUFFER_SIZE, stream);
+        let reader =
+            BufReader::with_capacity(NetIO::NETWORK_BUFFER_SIZE, stream.try_clone().unwrap());
+        let writer = BufWriter::with_capacity(NetIO::NETWORK_BUFFER_SIZE, stream);
 
         Ok(Self {
             _is_server: is_server,

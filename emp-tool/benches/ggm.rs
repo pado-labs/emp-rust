@@ -1,13 +1,13 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use emp_tool::{Block, GgmTree, ZERO_BLOCK};
+use emp_tool::{Block, GgmTree};
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("ggm::gen::16M", move |bench| {
         let depth = 25;
         let ggm = GgmTree::new(depth);
-        let mut tree = vec![ZERO_BLOCK; 1 << (depth - 1)];
-        let mut k0 = vec![ZERO_BLOCK; depth - 1];
-        let mut k1 = vec![ZERO_BLOCK; depth - 1];
+        let mut tree = vec![Block::ZERO; 1 << (depth - 1)];
+        let mut k0 = vec![Block::ZERO; depth - 1];
+        let mut k1 = vec![Block::ZERO; depth - 1];
         let seed = rand::random::<Block>();
         bench.iter(|| {
             black_box(ggm.gen(

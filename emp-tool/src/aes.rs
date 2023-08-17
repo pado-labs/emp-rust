@@ -17,7 +17,7 @@ use crate::{
     _mm_shuffle_epi32, _mm_shuffle_ps, _mm_xor_si128,
 };
 
-use crate::{constants::AES_BLOCK_SIZE, Block};
+use crate::Block;
 ///The AES 128 struct
 #[derive(Copy, Clone, Debug)]
 pub struct Aes([Block; 11]);
@@ -65,6 +65,9 @@ macro_rules! expand_assist_arm {
 }
 
 impl Aes {
+    /// The AES_BLOCK_SIZE.
+    pub const AES_BLOCK_SIZE: usize = 8;
+
     /// New an AES instance
     #[inline(always)]
     pub fn new(key: Block) -> Self {
@@ -243,13 +246,13 @@ impl Aes {
     #[inline(always)]
     pub fn encrypt_block_slice(&self, blks: &mut [Block]) {
         let len = blks.len();
-        let ptr = blks.as_mut_ptr() as *mut [Block; AES_BLOCK_SIZE];
-        for i in 0..len / AES_BLOCK_SIZE {
+        let ptr = blks.as_mut_ptr() as *mut [Block; Aes::AES_BLOCK_SIZE];
+        for i in 0..len / Aes::AES_BLOCK_SIZE {
             let buf = unsafe { &mut *ptr.add(i) };
             *buf = self.encrypt_many_blocks(*buf);
         }
 
-        let remain = len % AES_BLOCK_SIZE;
+        let remain = len % Aes::AES_BLOCK_SIZE;
         if remain > 0 {
             let ptr = blks.as_mut_ptr() as *mut Block;
             let tmp = unsafe { ptr.add(len - remain) };
@@ -319,10 +322,10 @@ fn aes_test() {
     encrypt_test!(8);
     encrypt_test!(9);
 
-    let aes1 = Aes::new(crate::constants::ONES_BLOCK);
+    let aes1 = Aes::new(Block::ONES);
     let mut blks = [Block::default(); 4];
-    blks[1] = crate::constants::ONES_BLOCK;
-    blks[3] = crate::constants::ONES_BLOCK;
+    blks[1] = Block::ONES;
+    blks[3] = Block::ONES;
     Aes::para_encrypt::<2, 2>([aes, aes1], &mut blks);
     assert_eq!(
         blks,

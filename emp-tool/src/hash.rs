@@ -2,7 +2,7 @@
 
 use sha2::{Digest, Sha256};
 
-use crate::{aes::Aes, constants::DIGEST_SIZE, Block, ZERO_BLOCK};
+use crate::{aes::Aes, Block};
 
 /// Correlation-robust hash function for 128-bit inputs
 /// (cf. <https://eprint.iacr.org/2019/074>, §7.2).
@@ -14,7 +14,7 @@ impl CrHash {
     /// New a function with zero key.
     #[inline(always)]
     pub fn new() -> Self {
-        Self(Aes::new(ZERO_BLOCK))
+        Self(Aes::new(Block::ZERO))
     }
 
     /// New a function with key.
@@ -56,7 +56,7 @@ impl CcrHash {
     /// New a function with zero key.
     #[inline(always)]
     pub fn new() -> Self {
-        Self(Aes::new(ZERO_BLOCK))
+        Self(Aes::new(Block::ZERO))
     }
 
     /// New a function with key.
@@ -75,7 +75,7 @@ impl CcrHash {
     /// Hash many blocks.
     #[inline(always)]
     pub fn hash_many_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
-        let mut t = [ZERO_BLOCK; N];
+        let mut t = [Block::ZERO; N];
         for i in 0..N {
             t[i] = Block::sigma(blks[i]);
         }
@@ -102,7 +102,7 @@ impl TccrHash {
     /// New a function with zero key.
     #[inline(always)]
     pub fn new() -> Self {
-        Self(Aes::new(ZERO_BLOCK))
+        Self(Aes::new(Block::ZERO))
     }
 
     /// New a function with key.
@@ -145,6 +145,9 @@ impl Default for TccrHash {
 pub struct Hash(Sha256);
 
 impl Hash {
+    /// Hash Digest Size
+    pub const DIGEST_SIZE: usize = 32;
+
     /// New a hash instance.
     #[inline(always)]
     pub fn new() -> Self {
@@ -159,9 +162,9 @@ impl Hash {
 
     /// Finalize output
     #[inline(always)]
-    pub fn finalize(&mut self) -> [u8; DIGEST_SIZE] {
+    pub fn finalize(&mut self) -> [u8; Hash::DIGEST_SIZE] {
         let hasher = self.0.clone();
-        let mut res = [0u8; DIGEST_SIZE];
+        let mut res = [0u8; Hash::DIGEST_SIZE];
         res.copy_from_slice(&hasher.finalize());
         res
     }
@@ -180,14 +183,14 @@ impl Hash {
 
     /// Hash bytes once.
     #[inline(always)]
-    pub fn hash_bytes_once(&mut self, m: &[u8]) -> [u8; DIGEST_SIZE] {
+    pub fn hash_bytes_once(&mut self, m: &[u8]) -> [u8; Hash::DIGEST_SIZE] {
         self.update(m);
         self.finalize()
     }
 
     /// Hash blocks once.
     #[inline(always)]
-    pub fn hash_blocks_once(&mut self, m: &[Block]) -> [u8; DIGEST_SIZE] {
+    pub fn hash_blocks_once(&mut self, m: &[Block]) -> [u8; Hash::DIGEST_SIZE] {
         self.update_block_slice(m);
         self.finalize()
     }
@@ -201,22 +204,21 @@ impl Default for Hash {
 
 #[test]
 fn hash_test() {
-    use crate::ONES_BLOCK;
     let h = CrHash::new();
     assert_eq!(
-        h.hash_block(ONES_BLOCK),
+        h.hash_block(Block::ONES),
         Block::from(0xb19972c12db88c05f5a57a153673a4c0)
     );
 
     let h = CcrHash::new();
     assert_eq!(
-        h.hash_block(ONES_BLOCK),
+        h.hash_block(Block::ONES),
         Block::from(0x9e10c525db2c0ea50a1fa067183cf807)
     );
 
     let h = TccrHash::new();
     assert_eq!(
-        h.hash_block(ONES_BLOCK, 1),
+        h.hash_block(Block::ONES, 1),
         Block::from(0x68e0f8bae7d74f1581fc3d4b682d6260)
     );
 }

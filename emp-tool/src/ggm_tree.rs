@@ -1,6 +1,6 @@
 //! Implement GGM tree for OT.
 
-use crate::{Block, TwoKeyPrp, ZERO_BLOCK};
+use crate::{Block, TwoKeyPrp};
 
 /// Struct of GGM
 pub struct GgmTree {
@@ -12,7 +12,7 @@ impl GgmTree {
     ///New GgmTree instance.
     #[inline(always)]
     pub fn new(depth: usize) -> Self {
-        let tkprp = TwoKeyPrp::new([ZERO_BLOCK, Block::from(1u128)]);
+        let tkprp = TwoKeyPrp::new([Block::ZERO, Block::from(1u128)]);
         Self { tkprp, depth }
     }
 
@@ -22,7 +22,7 @@ impl GgmTree {
     /// Output: `k1`: XORs of all the right-node values in each level, with size `depth-1`.
     /// This implementation is adopted from EMP Toolkit.
     pub fn gen(&self, seed: Block, tree: &mut [Block], k0: &mut [Block], k1: &mut [Block]) {
-        let mut buf = vec![ZERO_BLOCK; 8];
+        let mut buf = vec![Block::ZERO; 8];
         self.tkprp.expand_1to2(tree, seed);
         k0[0] = tree[0];
         k1[0] = tree[1];
@@ -33,8 +33,8 @@ impl GgmTree {
         tree[0..4].copy_from_slice(&buf[0..4]);
 
         for h in 2..self.depth - 1 {
-            k0[h] = ZERO_BLOCK;
-            k1[h] = ZERO_BLOCK;
+            k0[h] = Block::ZERO;
+            k1[h] = Block::ZERO;
             let sz = 1 << h;
             for i in (0..=sz - 4).rev().step_by(4) {
                 self.tkprp.expand_4to8(&mut buf, &tree[i..]);
@@ -56,13 +56,13 @@ impl GgmTree {
 #[test]
 fn ggm_test() {
     let depth = 3;
-    let mut tree = vec![ZERO_BLOCK; 1 << (depth - 1)];
-    let mut k0 = vec![ZERO_BLOCK; depth - 1];
-    let mut k1 = vec![ZERO_BLOCK; depth - 1];
+    let mut tree = vec![Block::ZERO; 1 << (depth - 1)];
+    let mut k0 = vec![Block::ZERO; depth - 1];
+    let mut k1 = vec![Block::ZERO; depth - 1];
 
     let ggm = GgmTree::new(depth);
 
-    ggm.gen(ZERO_BLOCK, &mut tree, &mut k0, &mut k1);
+    ggm.gen(Block::ZERO, &mut tree, &mut k0, &mut k1);
 
     assert_eq!(
         tree,

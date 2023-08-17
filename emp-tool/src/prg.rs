@@ -1,6 +1,6 @@
 //! Implement AES-based PRG.
 
-use crate::{aes::Aes, constants::AES_BLOCK_SIZE, Block};
+use crate::{aes::Aes, Block};
 use rand::Rng;
 use rand_core::{
     block::{BlockRng, BlockRngCore},
@@ -9,19 +9,19 @@ use rand_core::{
 
 ///Struct of PRG Core
 #[derive(Clone, Copy, Debug)]
-pub struct PrgCore {
+struct PrgCore {
     aes: Aes,
     state: u64,
 }
 
 impl BlockRngCore for PrgCore {
     type Item = u32;
-    type Results = [u32; 4 * AES_BLOCK_SIZE];
+    type Results = [u32; 4 * Aes::AES_BLOCK_SIZE];
 
     // Compute [AES(state)..AES(state+8)]
     #[inline(always)]
     fn generate(&mut self, results: &mut Self::Results) {
-        let states = [0; AES_BLOCK_SIZE].map(
+        let states = [0; Aes::AES_BLOCK_SIZE].map(
             #[inline(always)]
             |_| {
                 let x = self.state;
@@ -72,7 +72,7 @@ impl RngCore for Prg {
 }
 
 impl SeedableRng for Prg {
-    type Seed = <PrgCore as SeedableRng>::Seed;
+    type Seed = Block;
 
     #[inline(always)]
     fn from_seed(seed: Self::Seed) -> Self {
@@ -143,7 +143,7 @@ impl Default for Prg {
 #[test]
 fn prg_test() {
     let mut prg = Prg::new();
-    let mut x = vec![crate::ZERO_BLOCK; 2];
+    let mut x = vec![Block::ZERO; 2];
     prg.random_blocks(&mut x);
     assert_ne!(x[0], x[1]);
 }
