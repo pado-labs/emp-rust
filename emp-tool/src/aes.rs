@@ -235,33 +235,25 @@ impl Aes {
         ctxt.map(Block)
     }
 
-    // Encrypt block vector
-    #[inline(always)]
-    #[allow(dead_code)]
-    fn encrypt_vec_blocks(&self, blks: &[Block]) -> Vec<Block> {
-        blks.iter().map(|x| self.encrypt_block(*x)).collect()
-    }
-
     /// Encrypt block slice
     #[inline(always)]
     pub fn encrypt_block_slice(&self, blks: &mut [Block]) {
         let len = blks.len();
-        let ptr = blks.as_mut_ptr() as *mut [Block; Aes::AES_BLOCK_SIZE];
+        let mut buf = [Block::ZERO; Aes::AES_BLOCK_SIZE];
         for i in 0..len / Aes::AES_BLOCK_SIZE {
-            let buf = unsafe { &mut *ptr.add(i) };
-            *buf = self.encrypt_many_blocks(*buf);
+            buf.copy_from_slice(&blks[i * Aes::AES_BLOCK_SIZE..(i + 1) * Aes::AES_BLOCK_SIZE]);
+            blks[i * Aes::AES_BLOCK_SIZE..(i + 1) * Aes::AES_BLOCK_SIZE]
+                .copy_from_slice(&self.encrypt_many_blocks(buf));
         }
 
         let remain = len % Aes::AES_BLOCK_SIZE;
         if remain > 0 {
-            let ptr = blks.as_mut_ptr() as *mut Block;
-            let tmp = unsafe { ptr.add(len - remain) };
             macro_rules! encrypt_some {
                 ($n:expr) => {{
                     if remain == $n {
-                        let ptr = tmp as *mut [Block; $n];
-                        let buf = unsafe { &mut *ptr };
-                        *buf = self.encrypt_many_blocks(*buf);
+                        let mut buf = [Block::ZERO; $n];
+                        buf.copy_from_slice(&blks[len - remain..]);
+                        blks[len - remain..].copy_from_slice(&self.encrypt_many_blocks(buf));
                     }
                 }};
             }
@@ -303,9 +295,6 @@ fn aes_test() {
 
             let d = aes.encrypt_many_blocks(blks);
             assert_eq!(d, [res; $n]);
-
-            let e = aes.encrypt_vec_blocks(&blks);
-            assert_eq!(e, [res; $n].to_vec());
 
             let mut f = [Block::default(); $n];
             aes.encrypt_block_slice(&mut f);
