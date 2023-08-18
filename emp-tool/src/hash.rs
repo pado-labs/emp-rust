@@ -41,6 +41,7 @@ impl CrHash {
 }
 
 impl Default for CrHash {
+    #[inline(always)]
     fn default() -> Self {
         Self::new()
     }
@@ -88,6 +89,7 @@ impl CcrHash {
 }
 
 impl Default for CcrHash {
+    #[inline(always)]
     fn default() -> Self {
         Self::new()
     }
@@ -136,6 +138,7 @@ impl TccrHash {
 }
 
 impl Default for TccrHash {
+    #[inline(always)]
     fn default() -> Self {
         Self::new()
     }
@@ -197,6 +200,7 @@ impl Hash {
 }
 
 impl Default for Hash {
+    #[inline(always)]
     fn default() -> Self {
         Self::new()
     }
