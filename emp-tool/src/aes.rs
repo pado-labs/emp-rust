@@ -169,9 +169,13 @@ impl Aes {
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_backend(&self, blk: Block) -> Block {
         let mut ctxt = _mm_xor_si128(blk.0, self.0[0].0);
-        for i in 1..10 {
-            ctxt = _mm_aesenc_si128(ctxt, self.0[i].0);
+
+        for key in self.0[1..10].iter() {
+            ctxt = _mm_aesenc_si128(ctxt, key.0);
         }
+        // for i in 1..10 {
+        //     ctxt = _mm_aesenc_si128(ctxt, self.0[i].0);
+        // }
 
         ctxt = _mm_aesenclast_si128(ctxt, self.0[10].0);
         Block(ctxt)
@@ -182,9 +186,14 @@ impl Aes {
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_backend(&self, blk: Block) -> Block {
         let mut ctxt = blk.0;
-        for i in 0..9 {
-            ctxt = vaesmcq_u8(vaeseq_u8(ctxt, self.0[i].0));
+
+        for key in self.0.iter().take(9) {
+            ctxt = vaesmcq_u8(vaeseq_u8(ctxt, key.0));
         }
+
+        // for i in 0..9 {
+        //     ctxt = vaesmcq_u8(vaeseq_u8(ctxt, self.0[i].0));
+        // }
 
         ctxt = veorq_u8(vaeseq_u8(ctxt, self.0[9].0), self.0[10].0);
         Block(ctxt)
@@ -201,19 +210,31 @@ impl Aes {
     #[target_feature(enable = "aes")]
     unsafe fn unsafe_encrypt_many_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
         let mut ctxt = blks.map(|x| x.0);
-        for i in 0..N {
-            ctxt[i] = _mm_xor_si128(ctxt[i], self.0[0].0);
+        for ct in ctxt.iter_mut() {
+            *ct = _mm_xor_si128(*ct, self.0[0].0);
         }
 
-        for j in 1..10 {
-            for i in 0..N {
-                ctxt[i] = _mm_aesenc_si128(ctxt[i], self.0[j].0);
+        // for i in 0..N {
+        //     ctxt[i] = _mm_xor_si128(ctxt[i], self.0[0].0);
+        // }
+
+        for key in self.0[1..10].iter() {
+            for ct in ctxt.iter_mut() {
+                *ct = _mm_aesenc_si128(*ct, key.0);
             }
         }
+        // for j in 1..10 {
+        //     for i in 0..N {
+        //         ctxt[i] = _mm_aesenc_si128(ctxt[i], self.0[j].0);
+        //     }
+        // }
 
-        for i in 0..N {
-            ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.0[10].0);
+        for ct in ctxt.iter_mut() {
+            *ct = _mm_aesenclast_si128(*ct, self.0[10].0);
         }
+        // for i in 0..N {
+        //     ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.0[10].0);
+        // }
 
         ctxt.map(|x| Block(x))
     }
@@ -223,15 +244,17 @@ impl Aes {
     #[target_feature(enable = "aes")]
     unsafe fn unsafe_encrypt_many_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
         let mut ctxt = blks.map(|x| x.0);
-        for j in 0..9 {
-            for i in 0..N {
-                ctxt[i] = vaesmcq_u8(vaeseq_u8(ctxt[i], self.0[j].0));
+
+        for key in self.0.iter().take(9) {
+            for ct in ctxt.iter_mut() {
+                *ct = vaesmcq_u8(vaeseq_u8(*ct, key.0));
             }
         }
 
-        for i in 0..N {
-            ctxt[i] = veorq_u8(vaeseq_u8(ctxt[i], self.0[9].0), self.0[10].0);
+        for ct in ctxt.iter_mut() {
+            *ct = veorq_u8(vaeseq_u8(*ct, self.0[9].0), self.0[10].0);
         }
+
         ctxt.map(Block)
     }
 
