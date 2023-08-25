@@ -32,6 +32,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             black_box(lpn.compute_naive(&mut y, &x));
         });
     });
+    
     c.bench_function("lpn-native-large", move |bench| {
         let seed = Block::ZERO;
         let k = 588_160;

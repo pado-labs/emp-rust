@@ -55,8 +55,8 @@ impl<const D: usize> Lpn<D> {
         }
     }
 
-    #[inline]
     // Compute 4 rows as a batch, this is for the `compute` function.
+    #[inline]
     fn compute_four_rows_indep(&self, y: &mut [Block], x: &[Block], pos: usize, prp: &Prp) {
         let mut cnt = 0u64;
         let index = [0; D].map(|_| {
@@ -99,6 +99,7 @@ impl<const D: usize> Lpn<D> {
     /// Input: `x` with length `k`.\
     /// Input: `y` with length `n`, this is actually `e` in LPN.\
     /// Output: `y = Ax + y`.\
+    /// Use `compute` function for optimized performance, but will keep it probably for test.
     pub fn compute_naive(&self, y: &mut [Block], x: &[Block]) {
         assert_eq!(x.len() as u32, self.k);
         assert!(x.len() >= D);
