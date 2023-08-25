@@ -291,9 +291,9 @@ impl Aes {
     }
 
     /// Encrypt many blocks with many keys.
-    /// Input: `NK` AES keys, and `NK * NM` blocks
-    /// Output: use each AES key encrypts each bunch of `NM` blocks
-    /// If the length of `blks` is larger than `NK * NM`, do not handle the rest part.
+    /// Input: `NK` AES keys `keys`, and `NK * NM` blocks `blks`
+    /// Output: each batch of NM blocks encrypted by a corresponding AES key.
+    /// Only handle the first `NK * NM` blocks of blks, do not handle the rest.
     #[inline(always)]
     pub fn para_encrypt<const NK: usize, const NM: usize>(keys: [Self; NK], blks: &mut [Block]) {
         assert!(blks.len() >= NM * NK);

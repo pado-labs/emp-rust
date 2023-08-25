@@ -6,7 +6,7 @@ use crate::{aes::Aes, Block};
 
 /// Correlation-robust hash function for 128-bit inputs
 /// (cf. <https://eprint.iacr.org/2019/074>, §7.2).
-/// The function computes `π(x) ⊕ x`.
+/// The function computes `π(x) xor x`.
 /// π(x) = AES(key=0x0,x)
 pub struct CrHash(Aes);
 
@@ -51,7 +51,8 @@ impl Default for CrHash {
 /// (cf.<https://eprint.iacr.org/2019/074>, §7.3).
 ///
 /// The function computes `H(sigma(x))`, where `H` is a correlation-robust hash
-/// function and `sigma( x0 || x1 ) = (x0 xor x1) || x1`.
+/// function and `sigma( x = x0 || x1 ) = x1 || (x0 xor x1)`.
+/// `x0` and `x1` are the lower and higher halves of `x`, respectively.
 pub struct CcrHash(Aes);
 impl CcrHash {
     /// New a function with zero key.

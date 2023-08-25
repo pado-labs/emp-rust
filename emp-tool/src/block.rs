@@ -277,7 +277,8 @@ impl Block {
         res * res
     }
 
-    /// Function ``sigma( x0 || x1 ) = (x0 xor x1) || x1``.
+    /// Let `x0` and `x1` be the lower and higher halves of `x`, respectively.
+    /// This function compute ``sigma( x = x0 || x1 ) = x1 || (x0 xor x1)``.
     #[inline(always)]
     pub fn sigma(a: Self) -> Self {
         #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
