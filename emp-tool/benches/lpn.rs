@@ -3,7 +3,36 @@ use emp_tool::{prg::Prg, Block, Lpn};
 use std::time::Duration;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("lpn-native", move |bench| {
+    c.bench_function("lpn-native-small", move |bench| {
+        let seed = Block::ZERO;
+        let k = 5_060;
+        let n = 166_400;
+        let lpn = Lpn::<10>::new(seed, k);
+        let mut x = vec![Block::ZERO; k as usize];
+        let mut y = vec![Block::ZERO; n];
+        let mut prg = Prg::new();
+        prg.random_blocks(&mut x);
+        prg.random_blocks(&mut y);
+        bench.iter(|| {
+            black_box(lpn.compute_naive(&mut y, &x));
+        });
+    });
+
+    c.bench_function("lpn-native-medium", move |bench| {
+        let seed = Block::ZERO;
+        let k = 158_000;
+        let n = 10_168_320;
+        let lpn = Lpn::<10>::new(seed, k);
+        let mut x = vec![Block::ZERO; k as usize];
+        let mut y = vec![Block::ZERO; n];
+        let mut prg = Prg::new();
+        prg.random_blocks(&mut x);
+        prg.random_blocks(&mut y);
+        bench.iter(|| {
+            black_box(lpn.compute_naive(&mut y, &x));
+        });
+    });
+    c.bench_function("lpn-native-large", move |bench| {
         let seed = Block::ZERO;
         let k = 588_160;
         let n = 10_616_092;
@@ -18,10 +47,10 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("lpn-rayon", move |bench| {
+    c.bench_function("lpn-rayon-small", move |bench| {
         let seed = Block::ZERO;
-        let k = 588_160;
-        let n = 10_616_092;
+        let k = 5_060;
+        let n = 166_400;
         let lpn = Lpn::<10>::new(seed, k);
         let mut x = vec![Block::ZERO; k as usize];
         let mut y = vec![Block::ZERO; n];
@@ -33,10 +62,10 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     });
 
-    c.bench_function("lpn-rayon-custmized", move |bench| {
+    c.bench_function("lpn-rayon-medium", move |bench| {
         let seed = Block::ZERO;
-        let k = 588_160;
-        let n = 10_616_092;
+        let k = 158_000;
+        let n = 10_168_320;
         let lpn = Lpn::<10>::new(seed, k);
         let mut x = vec![Block::ZERO; k as usize];
         let mut y = vec![Block::ZERO; n];
@@ -44,11 +73,11 @@ fn criterion_benchmark(c: &mut Criterion) {
         prg.random_blocks(&mut x);
         prg.random_blocks(&mut y);
         bench.iter(|| {
-            black_box(lpn.compute_with_customized_threads(&mut y, &x, 8));
+            black_box(lpn.compute(&mut y, &x));
         });
     });
 
-    c.bench_function("lpn-custmized", move |bench| {
+    c.bench_function("lpn-rayon-large", move |bench| {
         let seed = Block::ZERO;
         let k = 588_160;
         let n = 10_616_092;
@@ -59,7 +88,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         prg.random_blocks(&mut x);
         prg.random_blocks(&mut y);
         bench.iter(|| {
-            black_box(lpn.compute_with(&mut y, &x, 8));
+            black_box(lpn.compute(&mut y, &x));
         });
     });
 }

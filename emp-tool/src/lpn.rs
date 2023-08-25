@@ -1,11 +1,15 @@
-//! Implement LPN with local linear code
+//! Implement LPN with local linear code.
 //! More especifically, a local linear code is a random boolean matrix with at most D non-zero values in each row.
 
 use crate::{Block, Prp};
-use rayon::{prelude::*, ThreadPoolBuilder};
+use rayon::prelude::*;
 /// A struct related to LPN.
-/// The `seed` defines a sparse binary matrix `A` with at most `D` non-zero values in each row.
-/// Given a vector `x` and `e`, compute `y = Ax + e`.
+/// The `seed` defines a sparse binary matrix `A` with at most `D` non-zero values in each row.\
+/// `A` - is a binary matrix with `k` columns and `n` rows. The concrete number of `n` is determined by the input length. `A` will be generated on-the-fly.\
+/// `x` - is a `F_{2^128}` vector with length `k`.\
+/// `e` - is a `F_{2^128}` vector with length `n`.\
+/// Given a vector `x` and `e`, compute `y = Ax + e`.\
+/// Note that in the standard LPN problem, `x` is a binary vector, `e` is a sparse binary vector. The way we difined here is a more generic way in term of computing `y`.
 pub struct Lpn<const D: usize> {
     // The seed to generate the random sparse matrix A.
     seed: Block,
@@ -28,7 +32,7 @@ impl<const D: usize> Lpn<D> {
         Self { seed, k, mask }
     }
 
-    // Compute 4 rows
+    // Compute 4 rows as a batch, this is for the `compute_naive` function.
     #[inline]
     fn compute_four_rows_non_indep(&self, y: &mut [Block], x: &[Block], pos: usize, prp: &Prp) {
         let mut cnt = 0u64;
@@ -52,6 +56,7 @@ impl<const D: usize> Lpn<D> {
     }
 
     #[inline]
+    // Compute 4 rows as a batch, this is for the `compute` function.
     fn compute_four_rows_indep(&self, y: &mut [Block], x: &[Block], pos: usize, prp: &Prp) {
         let mut cnt = 0u64;
         let index = [0; D].map(|_| {
@@ -90,7 +95,10 @@ impl<const D: usize> Lpn<D> {
         }
     }
 
-    /// Compute Ax + e
+    /// Compute `Ax + e` in a naive way.\
+    /// Input: `x` with length `k`.\
+    /// Input: `y` with length `n`, this is actually `e` in LPN.\
+    /// Output: `y = Ax + y`.\
     pub fn compute_naive(&self, y: &mut [Block], x: &[Block]) {
         assert_eq!(x.len() as u32, self.k);
         assert!(x.len() >= D);
@@ -106,32 +114,10 @@ impl<const D: usize> Lpn<D> {
         }
     }
 
-    // Thread task.
-    fn task(&self, y: &mut [Block], x: &[Block], start: usize, end: usize) {
-        let prp = Prp::new(self.seed);
-        y.par_chunks_exact_mut(4).enumerate().for_each(|(i, y)| {
-            self.compute_four_rows_indep(y, x, i * 4, &prp);
-        });
-
-        let len = end - start;
-        let size = len - len % 4;
-
-        for i in size..len {
-            self.compute_one_row(y, x, i, &prp);
-        }
-        // let mut pos = start;
-        // while pos < end - 4 {
-        //     self.compute_four_rows_non_indep(y, x, pos, &prp);
-        //     pos += 4;
-        // }
-
-        // while pos < end {
-        //     self.compute_one_row(y, x, pos, &prp);
-        //     pos += 1;
-        // }
-    }
-
-    /// Compute Ax+e with multiple threads.
+    /// Compute `Ax + e` with multiple threads.\
+    /// Input: `x` with length `k`.\
+    /// Input: `y` with length `n`, this is actually `e` in LPN.\
+    /// Output: `y = Ax + y`.\
     pub fn compute(&self, y: &mut [Block], x: &[Block]) {
         assert_eq!(x.len() as u32, self.k);
         assert!(x.len() >= D);
@@ -146,97 +132,24 @@ impl<const D: usize> Lpn<D> {
             self.compute_one_row(y, x, i, &prp);
         }
     }
-
-    /// Compute Ax+e with customized threads.
-    pub fn compute_with_customized_threads(&self, y: &mut [Block], x: &[Block], threads: usize) {
-        assert_eq!(x.len() as u32, self.k);
-        assert!(x.len() >= D);
-        let prp = Prp::new(self.seed);
-        let size = y.len() - (y.len() % 4);
-
-        let pool = ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-
-        pool.install(|| {
-            y.par_chunks_exact_mut(4).enumerate().for_each(|(i, y)| {
-                self.compute_four_rows_indep(y, x, i * 4, &prp);
-            });
-
-            for i in size..y.len() {
-                self.compute_one_row(y, x, i, &prp);
-            }
-        });
-    }
-
-    ///
-    pub fn compute_with(&self, y: &mut [Block], x: &[Block], threads: usize) {
-        assert_eq!(x.len() as u32, self.k);
-        assert!(x.len() >= D);
-        //let prp = Prp::new(self.seed);
-
-        let pool = ThreadPoolBuilder::new()
-            .num_threads(threads)
-            .build()
-            .unwrap();
-
-        let width = y.len() / threads;
-        let len = y.len();
-
-        pool.install(|| {
-            if width > 0 {
-                y.par_chunks_exact_mut(width).for_each(|y| {
-                    //let start = i * width;
-                    //let end = std::cmp::min((i + 1) * width, len);
-
-                    self.task(y, x, 0, width);
-                });
-            }
-            // vec![0; threads].par_iter().for_each(|i| {
-            //     let start = i * width;
-            //     let end = std::cmp::min((i + 1) * width, y.len());
-            //     self.task(y, x, start, end);
-            // })
-
-            let start = (threads - 1) * width;
-            let end = len;
-            self.task(y, x, start, end);
-        });
-
-        // for i in 0..threads {
-        //     let start = i * width;
-        //     let end = std::cmp::min((i + 1) * width, y.len());
-        //     self.task(y, x, start, end);
-        // }
-
-        //let start = (threads - 1) * width;
-        // let start = (threads - 1) * width;
-        // let end = len;
-        // self.task(y, x, start, end);
-    }
 }
 
 #[test]
 fn lpn_test() {
     use crate::prg::Prg;
+
     let k = 20;
-    let n = 6;
+    let n = 200;
     let lpn = Lpn::<10>::new(Block::ZERO, k);
-    let mut x = vec![Block::ZERO; k as usize];
-    let mut y = vec![Block::ZERO; n];
+    let mut x = vec![Block::ONES; k as usize];
+    let mut y = vec![Block::ONES; n];
     let mut prg = Prg::new();
     prg.random_blocks(&mut x);
     prg.random_blocks(&mut y);
     let mut z = y.clone();
-    let mut zz = y.clone();
-    let mut zzz = y.clone();
-    lpn.compute_with_customized_threads(&mut y, &x, 8);
-    lpn.compute_naive(&mut z, &x);
-    lpn.compute(&mut zz, &x);
-    lpn.compute_with(&mut zzz, &x, 8);
+
+    lpn.compute_naive(&mut y, &x);
+    lpn.compute(&mut z, &x);
 
     assert_eq!(y, z);
-    assert_eq!(y, zz);
-    assert_eq!(y, zzz);
 }
