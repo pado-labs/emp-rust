@@ -16,12 +16,12 @@ struct PrgCore {
 
 impl BlockRngCore for PrgCore {
     type Item = u32;
-    type Results = [u32; 4 * Aes::AES_BLOCK_SIZE];
+    type Results = [u32; 32];
 
     // Compute [AES(state)..AES(state+8)]
     #[inline(always)]
     fn generate(&mut self, results: &mut Self::Results) {
-        let states = [0; Aes::AES_BLOCK_SIZE].map(
+        let states = [0; 8].map(
             #[inline(always)]
             |_| {
                 let x = self.state;

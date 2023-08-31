@@ -65,8 +65,8 @@ macro_rules! expand_assist_arm {
 }
 
 impl Aes {
-    /// The AES_BLOCK_SIZE.
-    pub const AES_BLOCK_SIZE: usize = 8;
+    // /// The AES_BLOCK_SIZE.
+    // pub const AES_BLOCK_SIZE: usize = 8;
 
     /// New an AES instance
     #[inline(always)]
@@ -243,14 +243,13 @@ impl Aes {
     #[inline(always)]
     pub fn encrypt_block_slice(&self, blks: &mut [Block]) {
         let len = blks.len();
-        let mut buf = [Block::ZERO; Aes::AES_BLOCK_SIZE];
-        for i in 0..len / Aes::AES_BLOCK_SIZE {
-            buf.copy_from_slice(&blks[i * Aes::AES_BLOCK_SIZE..(i + 1) * Aes::AES_BLOCK_SIZE]);
-            blks[i * Aes::AES_BLOCK_SIZE..(i + 1) * Aes::AES_BLOCK_SIZE]
-                .copy_from_slice(&self.encrypt_many_blocks(buf));
+        let mut buf = [Block::ZERO; 8];
+        for i in 0..len / 8 {
+            buf.copy_from_slice(&blks[i * 8..(i + 1) * 8]);
+            blks[i * 8..(i + 1) * 8].copy_from_slice(&self.encrypt_many_blocks(buf));
         }
 
-        let remain = len % Aes::AES_BLOCK_SIZE;
+        let remain = len % 8;
         if remain > 0 {
             macro_rules! encrypt_some {
                 ($n:expr) => {{
