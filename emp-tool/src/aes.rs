@@ -173,9 +173,6 @@ impl Aes {
         for key in self.0[1..10].iter() {
             ctxt = _mm_aesenc_si128(ctxt, key.0);
         }
-        // for i in 1..10 {
-        //     ctxt = _mm_aesenc_si128(ctxt, self.0[i].0);
-        // }
 
         ctxt = _mm_aesenclast_si128(ctxt, self.0[10].0);
         Block(ctxt)
@@ -190,10 +187,6 @@ impl Aes {
         for key in self.0.iter().take(9) {
             ctxt = vaesmcq_u8(vaeseq_u8(ctxt, key.0));
         }
-
-        // for i in 0..9 {
-        //     ctxt = vaesmcq_u8(vaeseq_u8(ctxt, self.0[i].0));
-        // }
 
         ctxt = veorq_u8(vaeseq_u8(ctxt, self.0[9].0), self.0[10].0);
         Block(ctxt)
@@ -214,27 +207,15 @@ impl Aes {
             *ct = _mm_xor_si128(*ct, self.0[0].0);
         }
 
-        // for i in 0..N {
-        //     ctxt[i] = _mm_xor_si128(ctxt[i], self.0[0].0);
-        // }
-
         for key in self.0[1..10].iter() {
             for ct in ctxt.iter_mut() {
                 *ct = _mm_aesenc_si128(*ct, key.0);
             }
         }
-        // for j in 1..10 {
-        //     for i in 0..N {
-        //         ctxt[i] = _mm_aesenc_si128(ctxt[i], self.0[j].0);
-        //     }
-        // }
 
         for ct in ctxt.iter_mut() {
             *ct = _mm_aesenclast_si128(*ct, self.0[10].0);
         }
-        // for i in 0..N {
-        //     ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.0[10].0);
-        // }
 
         ctxt.map(|x| Block(x))
     }

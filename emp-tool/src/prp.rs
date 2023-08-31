@@ -1,4 +1,4 @@
-//! A implementation of Pseudo Random Permutation (PRP) based on AES.
+//! An implementation of Pseudo Random Permutation (PRP) based on AES.
 
 use crate::{aes::Aes, Block};
 
