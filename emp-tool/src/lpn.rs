@@ -1,7 +1,7 @@
 //! Implement LPN with local linear code.
 //! More especifically, a local linear code is a random boolean matrix with at most D non-zero values in each row.
 
-use crate::{Block, Prp};
+use crate::{prp::Prp, Block};
 use rayon::prelude::*;
 /// A struct related to LPN.
 /// The `seed` defines a sparse binary matrix `A` with at most `D` non-zero values in each row.\
