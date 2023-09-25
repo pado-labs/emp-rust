@@ -94,7 +94,6 @@ fn criterion_benchmark(c: &mut Criterion) {
     });
 }
 
-// criterion_group!(benches, criterion_benchmark);
 criterion_group! {
     name = lpn;
     config = Criterion::default().warm_up_time(Duration::from_millis(1000)).sample_size(10);

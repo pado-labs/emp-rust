@@ -16,9 +16,9 @@ impl GgmTree {
     }
 
     /// Input: `seed`: a seed.\
-    /// Output: `tree`: a GGM (binary tree) `tree`, with size `2^{depth-1}`.\
-    /// Output: `k0`: XORs of all the left-node values in each level, with size `depth-1`.\
-    /// Output: `k1`: XORs of all the right-node values in each level, with size `depth-1`.\
+    /// Output: `tree`: a GGM (binary tree) `tree`, with size `2^{depth}`.\
+    /// Output: `k0`: XORs of all the left-node values in each level, with size `depth`.\
+    /// Output: `k1`: XORs of all the right-node values in each level, with size `depth`.\
     /// This implementation is adopted from EMP Toolkit.
     pub fn gen(&self, seed: Block, tree: &mut [Block], k0: &mut [Block], k1: &mut [Block]) {
         assert_eq!(tree.len(), 1 << (self.depth));
