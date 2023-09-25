@@ -17,7 +17,7 @@ use crate::{
     _mm_shuffle_epi32, _mm_shuffle_ps, _mm_xor_si128,
 };
 
-use crate::{constants::AES_BLOCK_SIZE, Block};
+use crate::Block;
 ///The AES 128 struct
 #[derive(Copy, Clone, Debug)]
 pub struct Aes([Block; 11]);
@@ -65,6 +65,9 @@ macro_rules! expand_assist_arm {
 }
 
 impl Aes {
+    // /// The AES_BLOCK_SIZE.
+    // pub const AES_BLOCK_SIZE: usize = 8;
+
     /// New an AES instance
     #[inline(always)]
     pub fn new(key: Block) -> Self {
@@ -166,8 +169,9 @@ impl Aes {
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_backend(&self, blk: Block) -> Block {
         let mut ctxt = _mm_xor_si128(blk.0, self.0[0].0);
-        for i in 1..10 {
-            ctxt = _mm_aesenc_si128(ctxt, self.0[i].0);
+
+        for key in self.0[1..10].iter() {
+            ctxt = _mm_aesenc_si128(ctxt, key.0);
         }
 
         ctxt = _mm_aesenclast_si128(ctxt, self.0[10].0);
@@ -179,8 +183,9 @@ impl Aes {
     #[target_feature(enable = "aes")]
     unsafe fn encrypt_backend(&self, blk: Block) -> Block {
         let mut ctxt = blk.0;
-        for i in 0..9 {
-            ctxt = vaesmcq_u8(vaeseq_u8(ctxt, self.0[i].0));
+
+        for key in self.0.iter().take(9) {
+            ctxt = vaesmcq_u8(vaeseq_u8(ctxt, key.0));
         }
 
         ctxt = veorq_u8(vaeseq_u8(ctxt, self.0[9].0), self.0[10].0);
@@ -198,18 +203,18 @@ impl Aes {
     #[target_feature(enable = "aes")]
     unsafe fn unsafe_encrypt_many_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
         let mut ctxt = blks.map(|x| x.0);
-        for i in 0..N {
-            ctxt[i] = _mm_xor_si128(ctxt[i], self.0[0].0);
+        for ct in ctxt.iter_mut() {
+            *ct = _mm_xor_si128(*ct, self.0[0].0);
         }
 
-        for j in 1..10 {
-            for i in 0..N {
-                ctxt[i] = _mm_aesenc_si128(ctxt[i], self.0[j].0);
+        for key in self.0[1..10].iter() {
+            for ct in ctxt.iter_mut() {
+                *ct = _mm_aesenc_si128(*ct, key.0);
             }
         }
 
-        for i in 0..N {
-            ctxt[i] = _mm_aesenclast_si128(ctxt[i], self.0[10].0);
+        for ct in ctxt.iter_mut() {
+            *ct = _mm_aesenclast_si128(*ct, self.0[10].0);
         }
 
         ctxt.map(|x| Block(x))
@@ -220,45 +225,38 @@ impl Aes {
     #[target_feature(enable = "aes")]
     unsafe fn unsafe_encrypt_many_blocks<const N: usize>(&self, blks: [Block; N]) -> [Block; N] {
         let mut ctxt = blks.map(|x| x.0);
-        for j in 0..9 {
-            for i in 0..N {
-                ctxt[i] = vaesmcq_u8(vaeseq_u8(ctxt[i], self.0[j].0));
+
+        for key in self.0.iter().take(9) {
+            for ct in ctxt.iter_mut() {
+                *ct = vaesmcq_u8(vaeseq_u8(*ct, key.0));
             }
         }
 
-        for i in 0..N {
-            ctxt[i] = veorq_u8(vaeseq_u8(ctxt[i], self.0[9].0), self.0[10].0);
+        for ct in ctxt.iter_mut() {
+            *ct = veorq_u8(vaeseq_u8(*ct, self.0[9].0), self.0[10].0);
         }
-        ctxt.map(Block)
-    }
 
-    // Encrypt block vector
-    #[inline(always)]
-    #[allow(dead_code)]
-    fn encrypt_vec_blocks(&self, blks: &[Block]) -> Vec<Block> {
-        blks.iter().map(|x| self.encrypt_block(*x)).collect()
+        ctxt.map(Block)
     }
 
     /// Encrypt block slice
     #[inline(always)]
     pub fn encrypt_block_slice(&self, blks: &mut [Block]) {
         let len = blks.len();
-        let ptr = blks.as_mut_ptr() as *mut [Block; AES_BLOCK_SIZE];
-        for i in 0..len / AES_BLOCK_SIZE {
-            let buf = unsafe { &mut *ptr.add(i) };
-            *buf = self.encrypt_many_blocks(*buf);
+        let mut buf = [Block::ZERO; 8];
+        for i in 0..len / 8 {
+            buf.copy_from_slice(&blks[i * 8..(i + 1) * 8]);
+            blks[i * 8..(i + 1) * 8].copy_from_slice(&self.encrypt_many_blocks(buf));
         }
 
-        let remain = len % AES_BLOCK_SIZE;
+        let remain = len % 8;
         if remain > 0 {
-            let ptr = blks.as_mut_ptr() as *mut Block;
-            let tmp = unsafe { ptr.add(len - remain) };
             macro_rules! encrypt_some {
                 ($n:expr) => {{
                     if remain == $n {
-                        let ptr = tmp as *mut [Block; $n];
-                        let buf = unsafe { &mut *ptr };
-                        *buf = self.encrypt_many_blocks(*buf);
+                        let mut buf = [Block::ZERO; $n];
+                        buf.copy_from_slice(&blks[len - remain..]);
+                        blks[len - remain..].copy_from_slice(&self.encrypt_many_blocks(buf));
                     }
                 }};
             }
@@ -273,9 +271,9 @@ impl Aes {
     }
 
     /// Encrypt many blocks with many keys.
-    /// Input: `NK` AES keys, and `NK * NM` blocks
-    /// Output: use each AES key encrypts each bunch of `NM` blocks
-    /// If the length of `blks` is larger than `NK * NM`, do not handle the rest part.
+    /// Input: `NK` AES keys `keys`, and `NK * NM` blocks `blks`
+    /// Output: each batch of NM blocks encrypted by a corresponding AES key.
+    /// Only handle the first `NK * NM` blocks of blks, do not handle the rest.
     #[inline(always)]
     pub fn para_encrypt<const NK: usize, const NM: usize>(keys: [Self; NK], blks: &mut [Block]) {
         assert!(blks.len() >= NM * NK);
@@ -301,9 +299,6 @@ fn aes_test() {
             let d = aes.encrypt_many_blocks(blks);
             assert_eq!(d, [res; $n]);
 
-            let e = aes.encrypt_vec_blocks(&blks);
-            assert_eq!(e, [res; $n].to_vec());
-
             let mut f = [Block::default(); $n];
             aes.encrypt_block_slice(&mut f);
             assert_eq!(f, [res; $n]);
@@ -319,10 +314,10 @@ fn aes_test() {
     encrypt_test!(8);
     encrypt_test!(9);
 
-    let aes1 = Aes::new(crate::constants::ONES_BLOCK);
+    let aes1 = Aes::new(Block::ONES);
     let mut blks = [Block::default(); 4];
-    blks[1] = crate::constants::ONES_BLOCK;
-    blks[3] = crate::constants::ONES_BLOCK;
+    blks[1] = Block::ONES;
+    blks[3] = Block::ONES;
     Aes::para_encrypt::<2, 2>([aes, aes1], &mut blks);
     assert_eq!(
         blks,

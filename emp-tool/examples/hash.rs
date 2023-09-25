@@ -1,12 +1,12 @@
 use std::time::Instant;
 
-use emp_tool::{hash::Hash, prg::Prg, ZERO_BLOCK};
+use emp_tool::{hash::Hash, prg::Prg, Block};
 
 fn hash_perf() {
     let mut length = 2usize;
     while length <= 8192 {
         let times = 1024 * 1024 * 32 / length;
-        let mut data = vec![ZERO_BLOCK; length];
+        let mut data = vec![Block::ZERO; length];
         let mut prg = Prg::new();
         prg.random_blocks(&mut data);
 

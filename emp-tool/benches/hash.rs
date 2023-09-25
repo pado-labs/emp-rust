@@ -2,7 +2,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use emp_tool::{
     hash::{CcrHash, CrHash, TccrHash},
-    Block, ZERO_BLOCK,
+    Block,
 };
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -18,7 +18,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("hash::cr_blocks::<8>", move |bench| {
         let hash = CrHash::new();
         bench.iter(|| {
-            black_box(hash.hash_many_blocks::<8>([ZERO_BLOCK; 8]));
+            black_box(hash.hash_many_blocks::<8>([Block::ZERO; 8]));
         });
     });
 
@@ -34,7 +34,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("hash::ccr_blocks::<8>", move |bench| {
         let hash = CcrHash::new();
         bench.iter(|| {
-            black_box(hash.hash_many_blocks::<8>([ZERO_BLOCK; 8]));
+            black_box(hash.hash_many_blocks::<8>([Block::ZERO; 8]));
         });
     });
 
@@ -51,7 +51,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("hash::tccr_blocks::<8>", move |bench| {
         let hash = TccrHash::new();
         bench.iter(|| {
-            black_box(hash.hash_many_blocks::<8>([ZERO_BLOCK; 8], [1; 8]));
+            black_box(hash.hash_many_blocks::<8>([Block::ZERO; 8], [1; 8]));
         });
     });
 }
