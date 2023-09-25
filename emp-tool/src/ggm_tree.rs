@@ -25,7 +25,7 @@ impl GgmTree {
         assert_eq!(k0.len(), self.depth);
         assert_eq!(k1.len(), self.depth);
 
-        let mut buf = vec![Block::ZERO; 8];
+        let mut buf = [Block::ZERO; 8];
         self.tkprp.expand_1to2(tree, seed);
         k0[0] = tree[0];
         k1[0] = tree[1];
@@ -98,7 +98,7 @@ impl GgmTree {
             return;
         }
 
-        let mut buf = vec![Block::ZERO; 8];
+        let mut buf = [Block::ZERO; 8];
         if sz == 2 {
             self.tkprp.expand_2to4(&mut buf, tree);
             tree[0..4].copy_from_slice(&buf[0..4]);
